@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor — Semantic CMS</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body class="editor-page">
+
+  <header class="editor-header">
+    <div class="editor-header-left">
+      <a href="/admin/" class="btn btn-ghost">← Dashboard</a>
+      <div class="undo-controls">
+        <button id="undo-btn" class="btn-icon" title="Undo" disabled>←</button>
+        <button id="redo-btn" class="btn-icon" title="Redo" disabled>→</button>
+      </div>
+    </div>
+    <h1 id="page-title-display" class="editor-page-title" contenteditable="true" spellcheck="false"></h1>
+    <div class="editor-header-right">
+      <button id="history-btn" class="btn btn-ghost">History</button>
+      <button id="save-btn" class="btn btn-primary">Save</button>
+    </div>
+  </header>
+
+  <div id="save-status" class="save-status" hidden></div>
+
+  <main class="editor-main">
+    <div id="block-stack" class="block-stack"></div>
+  </main>
+
+  <footer class="editor-footer">
+    <button id="help-toggle" class="btn-link">Something doesn't look right?</button>
+    <div id="help-panel" class="help-panel" hidden>
+      <label for="help-input">Tell me what looks wrong:</label>
+      <textarea id="help-input" rows="3" placeholder="The photo is too big on my phone..."></textarea>
+      <button id="help-submit" class="btn btn-primary">Ask for help</button>
+      <div id="help-result" hidden>
+        <div class="help-preview"></div>
+        <div class="help-actions">
+          <button id="help-apply" class="btn btn-primary">Apply this fix</button>
+          <button id="help-retry" class="btn btn-ghost">Try again</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Version history panel -->
+  <aside id="history-panel" class="side-panel" hidden>
+    <div class="side-panel-header">
+      <h2>Version history</h2>
+      <button class="btn-icon panel-close" data-panel="history-panel">✕</button>
+    </div>
+    <ul id="version-list" class="version-list"></ul>
+  </aside>
+
+  <!-- Asset library panel -->
+  <aside id="asset-panel" class="side-panel" hidden>
+    <div class="side-panel-header">
+      <h2>Choose an asset</h2>
+      <button class="btn-icon panel-close" data-panel="asset-panel">✕</button>
+    </div>
+    <div class="asset-search-bar">
+      <input type="search" id="asset-search" placeholder="Search..." autocomplete="off">
+    </div>
+    <button class="btn btn-ghost asset-upload-btn" id="asset-panel-upload">+ Upload new</button>
+    <input type="file" id="asset-panel-file-input" accept="image/*,application/pdf" hidden>
+    <div id="asset-panel-grid" class="asset-grid"></div>
+  </aside>
+
+  <!-- Block picker template (cloned into DOM by editor.js) -->
+  <template id="block-picker-template">
+    <div class="block-picker" role="listbox">
+      <button class="block-picker-option" data-type="paragraph" role="option">¶ Text</button>
+      <button class="block-picker-option" data-type="heading" role="option">H Heading</button>
+      <button class="block-picker-option" data-type="divider" role="option">— Divider</button>
+      <button class="block-picker-option" data-type="image" role="option">🖼 Image</button>
+      <button class="block-picker-option" data-type="gallery" role="option">▦ Gallery</button>
+      <button class="block-picker-option" data-type="file" role="option">📎 File</button>
+      <button class="block-picker-option" data-type="resource-list" role="option">📋 List</button>
+      <button class="block-picker-option" data-type="contact-form" role="option">✉ Contact</button>
+    </div>
+  </template>
+
+  <script type="module" src="/admin/editor.js"></script>
+</body>
+</html>

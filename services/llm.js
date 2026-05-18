@@ -1,0 +1,117 @@
+import config from '../config.js'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
+import path from 'path'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const adapterModule = await import(`../adapters/llm/${config.llm.adapter}.js`)
+const adapter = adapterModule.default
+
+function loadPrompt(name) {
+  const customPath = path.resolve(`./prompts/${name}.txt`)
+  const defaultPath = path.join(__dirname, `../prompts/${name}.txt`)
+  return fs.existsSync(customPath)
+    ? fs.readFileSync(customPath, 'utf8')
+    : fs.readFileSync(defaultPath, 'utf8')
+}
+
+function spansToText(spans) {
+  if (!spans) return ''
+  return spans.map(s => s.text).join('')
+}
+
+function buildAssetMapText(assetMap) {
+  return Object.entries(assetMap)
+    .map(([id, { url, filename }]) => `  ${id}: { url: "${url}", filename: "${filename}" }`)
+    .join('\n')
+}
+
+const CLASS_VOCABULARY = `
+Layout — images:
+  flow-left        Figure floated left on desktop, full width on mobile
+  flow-right       Figure floated right on desktop, full width on mobile
+  flow-full        Full width at all breakpoints
+  flow-center      Centred, constrained width, no float
+
+Gallery:
+  gallery-grid     Grid layout, column counts from data attributes
+  gallery-strip    Horizontal scrolling strip
+
+Downloads:
+  download-list    <ul> wrapper for a resource list
+  download-item    Individual download link
+  download-filename  Filename span inside a download link
+
+Forms:
+  contact-form     Form wrapper
+  form-field       Label + input wrapper
+  form-submit      Submit button
+
+Structure:
+  page-section     Logical subdivision within a page, used on <section> elements
+`.trim()
+
+const BREAKPOINTS = 'mobile: <640px, tablet: 640px–1024px, desktop: >1024px'
+
+export async function semanticPass({ blockJson, pageTitle, pageSlug, previousHtml, assetMap, siteSettings }) {
+  const prompt = loadPrompt('semantic')
+  const context = `SITE_NAME: ${siteSettings.site_name || ''}
+SITE_DESCRIPTION: ${siteSettings.site_description || ''}
+PAGE_TITLE: ${pageTitle}
+PAGE_SLUG: ${pageSlug}
+BREAKPOINTS: ${BREAKPOINTS}
+CLASS_VOCABULARY:
+${CLASS_VOCABULARY}
+
+ASSET_MAP:
+${buildAssetMapText(assetMap)}
+
+PREVIOUS_HTML:
+${previousHtml || '(none — first save)'}
+
+BLOCK_JSON:
+${JSON.stringify(blockJson, null, 2)}`
+
+  return adapter.complete(prompt, context)
+}
+
+export async function helpPass({ complaint, blockJson, currentHtml, pageTitle, pageSlug, siteSettings }) {
+  const prompt = loadPrompt('semantic')
+  const context = `SITE_NAME: ${siteSettings.site_name || ''}
+SITE_DESCRIPTION: ${siteSettings.site_description || ''}
+PAGE_TITLE: ${pageTitle}
+PAGE_SLUG: ${pageSlug}
+BREAKPOINTS: ${BREAKPOINTS}
+CLASS_VOCABULARY:
+${CLASS_VOCABULARY}
+
+EDITOR COMPLAINT: ${complaint}
+
+CURRENT_HTML:
+${currentHtml}
+
+BLOCK_JSON:
+${JSON.stringify(blockJson, null, 2)}`
+
+  return adapter.complete(prompt, context)
+}
+
+export async function cssAudit({ currentCss, allPageHtml, colorProperties }) {
+  const prompt = loadPrompt('css-audit')
+  const htmlFragments = allPageHtml.map((h, i) => `--- Page ${i + 1} ---\n${h}`).join('\n\n')
+  const context = `BREAKPOINTS: ${BREAKPOINTS}
+CLASS_VOCABULARY:
+${CLASS_VOCABULARY}
+
+COLOR_PROPERTIES:
+${colorProperties}
+
+CURRENT_CSS:
+${currentCss}
+
+ALL_PAGE_HTML:
+${htmlFragments}`
+
+  return adapter.complete(prompt, context)
+}

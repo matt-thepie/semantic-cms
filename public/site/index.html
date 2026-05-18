@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loading...</title>
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="site-logo" id="site-logo"></a>
+    <nav id="site-nav" class="site-nav" aria-label="Main navigation"></nav>
+  </header>
+
+  <main id="content" class="site-content">
+    <!-- Page content injected here -->
+  </main>
+
+  <footer class="site-footer">
+    <p id="site-footer-name"></p>
+  </footer>
+
+  <!-- Password-protected page form template -->
+  <template id="password-form-template">
+    <section class="password-gate">
+      <h1>Password required</h1>
+      <p>This page is password protected.</p>
+      <form id="page-unlock-form">
+        <div class="form-field">
+          <label for="page-password">Password</label>
+          <input type="password" id="page-password" required autofocus>
+        </div>
+        <p class="unlock-error" hidden></p>
+        <button type="submit" class="form-submit">Continue</button>
+      </form>
+    </section>
+  </template>
+
+  <script type="module" src="/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — Semantic CMS</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  <header class="app-header">
+    <span id="site-name" class="app-title">Semantic CMS</span>
+    <button id="logout-btn" class="btn btn-ghost">Log out</button>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="pages">Pages</button>
+    <button class="tab-btn" data-tab="assets">Assets</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </nav>
+
+  <main class="tab-content">
+
+    <!-- Pages tab -->
+    <section id="tab-pages" class="tab-panel active">
+      <ul id="page-list" class="page-list"></ul>
+      <div class="tab-actions">
+        <button id="new-page-btn" class="btn btn-primary">+ New page</button>
+      </div>
+    </section>
+
+    <!-- Assets tab -->
+    <section id="tab-assets" class="tab-panel" hidden>
+      <div class="asset-upload-zone" id="upload-zone">
+        <p>Drag files here or <button class="btn-link" id="upload-trigger">choose files</button></p>
+        <input type="file" id="file-input" multiple accept="image/*,application/pdf" hidden>
+      </div>
+      <div id="upload-progress"></div>
+      <div id="asset-grid" class="asset-grid"></div>
+    </section>
+
+    <!-- Settings tab -->
+    <section id="tab-settings" class="tab-panel" hidden>
+      <form id="settings-form" class="settings-form">
+        <fieldset>
+          <legend>Site</legend>
+          <div class="form-field">
+            <label for="site_name">Site name</label>
+            <input type="text" id="site_name" name="site_name">
+          </div>
+          <div class="form-field">
+            <label for="site_description">Site description</label>
+            <input type="text" id="site_description" name="site_description">
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Contact email</legend>
+          <div class="form-field">
+            <label for="smtp_to">Send contact form submissions to</label>
+            <input type="email" id="smtp_to" name="smtp_to">
+          </div>
+          <div class="form-field">
+            <label for="smtp_from">Send from address</label>
+            <input type="email" id="smtp_from" name="smtp_from">
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>SMTP</legend>
+          <div class="form-field">
+            <label for="smtp_host">SMTP host</label>
+            <input type="text" id="smtp_host" name="smtp_host">
+          </div>
+          <div class="form-field">
+            <label for="smtp_port">SMTP port</label>
+            <input type="number" id="smtp_port" name="smtp_port" value="587">
+          </div>
+          <div class="form-field">
+            <label for="smtp_user">SMTP username</label>
+            <input type="text" id="smtp_user" name="smtp_user">
+          </div>
+          <div class="form-field">
+            <label for="smtp_password">SMTP password</label>
+            <input type="password" id="smtp_password" name="smtp_password" placeholder="Leave blank to keep current">
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Admin password</legend>
+          <div class="form-field">
+            <label for="admin_password">New admin password</label>
+            <input type="password" id="admin_password" name="admin_password" placeholder="Leave blank to keep current">
+          </div>
+        </fieldset>
+
+        <div class="settings-actions">
+          <button type="submit" class="btn btn-primary">Save settings</button>
+          <button type="button" id="test-smtp-btn" class="btn btn-ghost">Send test email</button>
+        </div>
+        <p id="settings-msg" class="status-message" hidden></p>
+      </form>
+
+      <div class="danger-zone">
+        <button id="tidy-css-btn" class="btn btn-ghost">Tidy CSS</button>
+        <p class="muted">Refactors the site stylesheet using AI. Doesn't change how the site looks.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- New page dialog -->
+  <dialog id="new-page-dialog">
+    <form method="dialog" id="new-page-form">
+      <h2>New page</h2>
+      <div class="form-field">
+        <label for="new-title">Title</label>
+        <input type="text" id="new-title" required>
+      </div>
+      <div class="form-field">
+        <label for="new-slug">URL slug</label>
+        <input type="text" id="new-slug" pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only">
+      </div>
+      <div class="form-field">
+        <label>
+          <input type="checkbox" id="new-protected"> Password protected
+        </label>
+      </div>
+      <div class="form-field" id="new-password-field" hidden>
+        <label for="new-password">Page password</label>
+        <input type="password" id="new-password">
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create page</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Tidy CSS dialog -->
+  <dialog id="tidy-css-dialog">
+    <h2>Tidy CSS</h2>
+    <p>This will refactor the site stylesheet using AI. It won't change how the site looks, but it will clean up the underlying CSS. This may take 10–20 seconds.</p>
+    <div id="tidy-progress" hidden>
+      <p class="muted">Refactoring...</p>
+    </div>
+    <div id="tidy-result" hidden></div>
+    <div class="dialog-actions" id="tidy-actions">
+      <button class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+      <button id="tidy-confirm-btn" class="btn btn-primary">Tidy CSS</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="/admin/dashboard.js"></script>
+</body>
+</html>

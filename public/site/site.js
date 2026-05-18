@@ -1,0 +1,122 @@
+// Public site — fetch and inject page content from the API
+
+const slug = window.location.pathname.replace(/^\//, '') || 'home'
+
+async function init() {
+  await loadNav()
+  await loadPage(slug)
+}
+
+async function loadNav() {
+  try {
+    const res = await fetch('/api/pages')
+    if (!res.ok) return
+    const pages = await res.json()
+    const nav = document.getElementById('site-nav')
+    nav.innerHTML = pages.map(p =>
+      `<a href="/${p.slug === 'home' ? '' : p.slug}" class="${slug === p.slug || (slug === 'home' && p.slug === 'home') ? 'active' : ''}">${p.title}</a>`
+    ).join('')
+  } catch {}
+}
+
+async function loadPage(slug) {
+  let res
+  try {
+    res = await fetch(`/api/pages/${slug}`)
+  } catch {
+    renderError('Could not connect to the server.')
+    return
+  }
+
+  if (res.status === 401) {
+    renderPasswordForm(slug)
+    return
+  }
+
+  if (res.status === 404) {
+    renderNotFound()
+    return
+  }
+
+  const page = await res.json()
+  document.title = page.title + (document.getElementById('site-logo')?.textContent ? ` — ${document.getElementById('site-logo').textContent}` : '')
+  document.getElementById('content').innerHTML = page.rendered_html || '<p>This page has no content yet.</p>'
+
+  // Wire up contact forms in the injected HTML
+  document.querySelectorAll('.contact-form').forEach(wireContactForm)
+}
+
+function renderPasswordForm(slug) {
+  const template = document.getElementById('password-form-template')
+  const form = template.content.cloneNode(true)
+  document.getElementById('content').innerHTML = ''
+  document.getElementById('content').appendChild(form)
+
+  document.getElementById('page-unlock-form').addEventListener('submit', async e => {
+    e.preventDefault()
+    const password = document.getElementById('page-password').value
+    const res = await fetch(`/api/pages/${slug}/unlock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    if (res.ok) {
+      await loadPage(slug)
+    } else {
+      const errEl = document.querySelector('.unlock-error')
+      errEl.textContent = 'Incorrect password.'
+      errEl.hidden = false
+    }
+  })
+}
+
+function renderNotFound() {
+  document.title = 'Page not found'
+  document.getElementById('content').innerHTML = '<section class="page-section"><h1>Page not found</h1><p>Sorry, this page doesn\'t exist.</p></section>'
+}
+
+function renderError(msg) {
+  document.getElementById('content').innerHTML = `<section class="page-section"><p>${msg}</p></section>`
+}
+
+function wireContactForm(form) {
+  form.addEventListener('submit', async e => {
+    e.preventDefault()
+    const data = Object.fromEntries(new FormData(form))
+    const submitBtn = form.querySelector('[type="submit"]')
+    submitBtn.disabled = true
+
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+
+    if (res.ok) {
+      form.innerHTML = '<p class="contact-success">Thank you — your message has been sent.</p>'
+    } else {
+      submitBtn.disabled = false
+      const errP = form.querySelector('.contact-error') || Object.assign(document.createElement('p'), { className: 'contact-error' })
+      errP.textContent = 'Something went wrong. Please try again.'
+      if (!form.querySelector('.contact-error')) form.appendChild(errP)
+    }
+  })
+}
+
+// Load site name into header/footer from the nav response
+async function loadSiteMeta() {
+  try {
+    const res = await fetch('/api/settings')
+    if (!res.ok) return
+    const settings = await res.json()
+    const name = settings.site_name || ''
+    const logoEl = document.getElementById('site-logo')
+    if (logoEl && name) logoEl.textContent = name
+    const footerEl = document.getElementById('site-footer-name')
+    if (footerEl && name) footerEl.textContent = `© ${new Date().getFullYear()} ${name}`
+  } catch {}
+}
+
+// Settings are public-readable for nav; they don't contain sensitive data
+loadSiteMeta()
+init()
