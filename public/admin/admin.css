@@ -611,16 +611,16 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 
 .side-panel {
   position: fixed;
-  top: 0;
+  top: var(--header-h);
   right: 0;
   width: 320px;
-  height: 100dvh;
+  height: calc(100dvh - var(--header-h));
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  z-index: 300;
+  z-index: 200;
   overflow-y: auto;
 }
 

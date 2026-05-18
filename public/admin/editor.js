@@ -64,7 +64,24 @@ document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
   if ((e.metaKey || e.ctrlKey) && (e.key === 'Z' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo() }
   if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save() }
-  if (e.key === 'Escape') closeAllPopovers()
+  if (e.key === 'Escape') {
+    closeAllPopovers()
+    closePanels()
+  }
+})
+
+function closePanels() {
+  document.getElementById('asset-panel').hidden = true
+  document.getElementById('history-panel').hidden = true
+  assetPickerCallback = null
+}
+
+document.addEventListener('click', e => {
+  const assetPanel = document.getElementById('asset-panel')
+  if (!assetPanel.hidden && !assetPanel.contains(e.target) && !e.target.closest('.asset-pick-btn, .gallery-add-btn, .add-file-btn, #asset-panel-upload')) {
+    assetPanel.hidden = true
+    assetPickerCallback = null
+  }
 })
 
 // ─── Load page ────────────────────────────────────────────────────────────────
