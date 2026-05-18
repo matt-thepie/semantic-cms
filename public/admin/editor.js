@@ -70,25 +70,14 @@ document.addEventListener('keydown', e => {
 // ─── Load page ────────────────────────────────────────────────────────────────
 
 async function loadPage() {
-  const res = await api('GET', '/pages')
-  const pages = await res.json()
-  const page = pages.find(p => p.id === pageId)
-  if (!page) { alert('Page not found'); window.location.href = '/admin/'; return }
+  const res = await api('GET', `/pages/${pageId}/content`)
+  if (!res.ok) { alert('Page not found'); window.location.href = '/admin/'; return }
 
+  const page = await res.json()
   document.title = `${page.title} — Editor`
   document.getElementById('page-title-display').textContent = page.title
-
-  // Load current block JSON from latest version
-  const verRes = await api('GET', `/pages/${pageId}/versions`)
-  const versions = await verRes.json()
-  if (versions.length) {
-    // Fetch block_json from the latest version — we need to get it from save endpoint or stored separately
-    // For now, load via a special approach: re-fetch the save history
-    // Actually we don't expose block_json in the versions list endpoint for public.
-    // We store it in the client after each save.
-    // On reload, we reconstruct from the page's last known version.
-    // TODO: expose block_json in a GET /api/pages/:id/content endpoint
-  }
+  blocks = page.block_json
+  currentHtml = page.rendered_html
 
   renderBlocks()
 }

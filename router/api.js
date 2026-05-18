@@ -161,6 +161,22 @@ router.post('/pages/:slug/unlock', unlockLimit, async (req, res) => {
   res.json({ ok: true })
 })
 
+// ─── Page content (current state) ────────────────────────────────────────────
+
+router.get('/pages/:id/content', requireAdmin, (req, res) => {
+  const page = db.prepare('SELECT id, slug, title FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  if (!page) return res.status(404).json({ error: 'Not found' })
+
+  const version = db.prepare('SELECT block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
+  res.json({
+    id: page.id,
+    slug: page.slug,
+    title: page.title,
+    block_json: version ? JSON.parse(version.block_json) : [],
+    rendered_html: version?.rendered_html || '',
+  })
+})
+
 // ─── Page content (save flow) ─────────────────────────────────────────────────
 
 router.post('/pages/:id/save', requireAdmin, async (req, res) => {
