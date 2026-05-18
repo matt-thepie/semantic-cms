@@ -9,7 +9,10 @@
 <body>
   <header class="app-header">
     <span id="site-name" class="app-title">Semantic CMS</span>
-    <button id="logout-btn" class="btn btn-ghost">Log out</button>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <a href="/" target="_blank" class="btn btn-ghost">View site ↗</a>
+      <button id="logout-btn" class="btn btn-ghost">Log out</button>
+    </div>
   </header>
 
   <nav class="tab-nav">
@@ -99,6 +102,16 @@
         </div>
         <p id="settings-msg" class="status-message" hidden></p>
       </form>
+
+      <div class="design-zone">
+        <h3>Change the design</h3>
+        <p class="muted">Describe how you'd like the site to look and AI will update the stylesheet.</p>
+        <div class="form-field">
+          <textarea id="design-brief" rows="3" placeholder="Make the headings a deep forest green. Use a warmer, creamier background. Make the body text slightly larger."></textarea>
+        </div>
+        <button id="design-btn" class="btn btn-primary">Apply design</button>
+        <p id="design-msg" class="status-message" hidden></p>
+      </div>
 
       <div class="danger-zone">
         <button id="tidy-css-btn" class="btn btn-ghost">Tidy CSS</button>

@@ -97,6 +97,31 @@ ${JSON.stringify(blockJson, null, 2)}`
   return adapter.complete(prompt, context)
 }
 
+export async function designPass({ brief, currentCss, allPageHtml }) {
+  const prompt = `You are a CSS designer for a small personal website. You will receive the current stylesheet, all page HTML fragments it styles, and a plain-English design brief from the site owner.
+
+Your job is to update the stylesheet so it reflects the brief — changing colours, fonts, spacing, layout, or whatever the brief calls for — without breaking any functionality.
+
+RULES
+- Return only the complete updated CSS. No explanation, no markdown, no commentary.
+- All colours must be CSS custom properties defined in :root. Change the custom property values to achieve colour changes — do not hardcode hex or rgb values elsewhere in the stylesheet.
+- Keep the file mobile-first: base styles for mobile, min-width media queries for larger screens.
+- Preserve the existing CSS custom property names — you may change their values.
+- You may add new custom properties to :root if needed, but keep the set minimal.
+- Do not remove any structural class rules (flow-left, gallery-grid, contact-form, etc.) — only change their visual properties if the brief calls for it.
+- Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.`
+
+  const context = `DESIGN BRIEF: ${brief}
+
+CURRENT CSS:
+${currentCss}
+
+PAGE HTML (for context — do not change this):
+${allPageHtml.map((h, i) => `--- Page ${i + 1} ---\n${h}`).join('\n\n')}`
+
+  return adapter.complete(prompt, context)
+}
+
 export async function cssAudit({ currentCss, allPageHtml, colorProperties }) {
   const prompt = loadPrompt('css-audit')
   const htmlFragments = allPageHtml.map((h, i) => `--- Page ${i + 1} ---\n${h}`).join('\n\n')

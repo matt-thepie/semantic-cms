@@ -9,7 +9,7 @@ import db from '../db.js'
 import { requireAdmin, checkAdminPassword, changeAdminPassword } from '../services/auth.js'
 import { describeChange, nextPageId, nextAssetId } from '../services/versions.js'
 import { uploadAsset, deleteAsset } from '../services/storage.js'
-import { semanticPass, helpPass, cssAudit } from '../services/llm.js'
+import { semanticPass, helpPass, cssAudit, designPass } from '../services/llm.js'
 import { sendContactEmail, sendTestEmail } from '../services/mailer.js'
 
 const router = Router()
@@ -365,6 +365,31 @@ router.delete('/assets/:id', requireAdmin, async (req, res) => {
 })
 
 // ─── CSS Audit ────────────────────────────────────────────────────────────────
+
+router.post('/css/design', requireAdmin, async (req, res) => {
+  const { brief } = req.body
+  if (!brief?.trim()) return res.status(400).json({ error: 'brief required' })
+
+  const cssPath = path.resolve('./public/site/site.css')
+  const currentCss = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf8') : ''
+
+  const pages = db.prepare(`
+    SELECT pv.rendered_html FROM page_versions pv
+    INNER JOIN (SELECT page_id, MAX(id) AS max_id FROM page_versions GROUP BY page_id) latest
+      ON pv.page_id = latest.page_id AND pv.id = latest.max_id
+    INNER JOIN pages p ON pv.page_id = p.id
+    WHERE p.deleted_at IS NULL AND pv.rendered_html IS NOT NULL
+  `).all()
+
+  const allPageHtml = pages.map(p => p.rendered_html)
+
+  try {
+    const updatedCss = await designPass({ brief, currentCss, allPageHtml })
+    res.json({ updated_css: updatedCss })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
 router.post('/css/audit', requireAdmin, async (req, res) => {
   const cssPath = path.resolve('./public/site/site.css')

@@ -234,6 +234,35 @@ document.getElementById('test-smtp-btn').addEventListener('click', async () => {
   setTimeout(() => { msg.hidden = true }, 4000)
 })
 
+// ─── Design ───────────────────────────────────────────────────────────────────
+
+document.getElementById('design-btn').addEventListener('click', async () => {
+  const brief = document.getElementById('design-brief').value.trim()
+  if (!brief) return
+
+  const btn = document.getElementById('design-btn')
+  const msg = document.getElementById('design-msg')
+  btn.disabled = true
+  btn.textContent = 'Working…'
+  msg.hidden = true
+
+  const res = await api('POST', '/css/design', { brief })
+
+  if (res.ok) {
+    const { updated_css } = await res.json()
+    await api('PUT', '/css', { css: updated_css })
+    msg.textContent = 'Design updated. Refresh the public site to see the changes.'
+    msg.hidden = false
+  } else {
+    msg.textContent = 'Something went wrong. Try again.'
+    msg.hidden = false
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Apply design'
+  setTimeout(() => { msg.hidden = true }, 6000)
+})
+
 // ─── Tidy CSS ─────────────────────────────────────────────────────────────────
 
 const tidyCssDialog = document.getElementById('tidy-css-dialog')

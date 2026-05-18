@@ -291,8 +291,17 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 
 .status-message { margin-top: .75rem; color: var(--color-success); font-size: .875rem }
 
+.design-zone {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.design-zone h3 { font-size: .95rem; margin-bottom: .375rem }
+.design-zone textarea { width: 100%; resize: vertical }
+
 .danger-zone {
-  margin-top: 3rem;
+  margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
 }
