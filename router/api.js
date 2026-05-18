@@ -25,6 +25,14 @@ function getSiteSettings() {
   return Object.fromEntries(rows.map(r => [r.key, r.value]))
 }
 
+function getSitePages() {
+  return db.prepare(`
+    SELECT slug, title, purpose FROM pages
+    WHERE deleted_at IS NULL
+    ORDER BY nav_order ASC, created_at ASC
+  `).all()
+}
+
 function getAssetMap(blockJson) {
   const ids = new Set()
   const collect = (blocks) => {
@@ -85,7 +93,7 @@ router.get('/auth/status', (req, res) => {
 
 router.get('/pages', requireAdmin, (req, res) => {
   const pages = db.prepare(`
-    SELECT id, slug, title, nav_order, password_hash IS NOT NULL AS protected, updated_at
+    SELECT id, slug, title, nav_order, purpose, password_hash IS NOT NULL AS protected, updated_at
     FROM pages WHERE deleted_at IS NULL ORDER BY nav_order ASC, created_at ASC
   `).all()
   res.json(pages.map(p => ({ ...p, protected: !!p.protected })))
@@ -124,7 +132,7 @@ router.post('/pages', requireAdmin, async (req, res) => {
 })
 
 router.put('/pages/:id', requireAdmin, (req, res) => {
-  const { title, nav_order } = req.body
+  const { title, nav_order, purpose } = req.body
   const page = db.prepare('SELECT id FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
@@ -132,6 +140,7 @@ router.put('/pages/:id', requireAdmin, (req, res) => {
   const values = []
   if (title !== undefined)     { updates.push('title = ?');     values.push(title) }
   if (nav_order !== undefined) { updates.push('nav_order = ?'); values.push(nav_order) }
+  if (purpose !== undefined)   { updates.push('purpose = ?');   values.push(purpose || null) }
   if (!updates.length) return res.status(400).json({ error: 'Nothing to update' })
 
   updates.push('updated_at = ?')
@@ -164,7 +173,7 @@ router.post('/pages/:slug/unlock', unlockLimit, async (req, res) => {
 // ─── Page content (current state) ────────────────────────────────────────────
 
 router.get('/pages/:id/content', requireAdmin, (req, res) => {
-  const page = db.prepare('SELECT id, slug, title FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
   const version = db.prepare('SELECT block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
@@ -172,6 +181,7 @@ router.get('/pages/:id/content', requireAdmin, (req, res) => {
     id: page.id,
     slug: page.slug,
     title: page.title,
+    purpose: page.purpose || '',
     block_json: version ? JSON.parse(version.block_json) : [],
     rendered_html: version?.rendered_html || '',
   })
@@ -183,7 +193,7 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
   const { block_json } = req.body
   if (!Array.isArray(block_json)) return res.status(400).json({ error: 'block_json must be an array' })
 
-  const page = db.prepare('SELECT id, slug, title FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
   const previousVersion = db.prepare('SELECT block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
@@ -192,6 +202,7 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
 
   const assetMap = getAssetMap(block_json)
   const siteSettings = getSiteSettings()
+  const sitePages = getSitePages()
 
   let renderedHtml = null
   try {
@@ -199,9 +210,11 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
       blockJson: block_json,
       pageTitle: page.title,
       pageSlug:  page.slug,
+      pagePurpose: page.purpose,
       previousHtml,
       assetMap,
       siteSettings,
+      sitePages,
     })
   } catch (err) {
     console.error('LLM semantic pass failed:', err.message)
@@ -227,10 +240,11 @@ router.post('/pages/:id/help', requireAdmin, async (req, res) => {
   const { complaint, block_json, current_html } = req.body
   if (!complaint) return res.status(400).json({ error: 'complaint required' })
 
-  const page = db.prepare('SELECT id, slug, title FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
   const siteSettings = getSiteSettings()
+  const sitePages = getSitePages()
 
   try {
     const adjustedHtml = await helpPass({
@@ -239,7 +253,9 @@ router.post('/pages/:id/help', requireAdmin, async (req, res) => {
       currentHtml: current_html,
       pageTitle: page.title,
       pageSlug: page.slug,
+      pagePurpose: page.purpose,
       siteSettings,
+      sitePages,
     })
     res.json({ adjusted_html: adjustedHtml })
   } catch (err) {
@@ -262,7 +278,7 @@ router.post('/pages/:id/versions/:vid/restore', requireAdmin, async (req, res) =
 
   req.body = { block_json: JSON.parse(version.block_json) }
   // Delegate to the save flow by calling it inline
-  const page = db.prepare('SELECT id, slug, title FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
   const block_json = JSON.parse(version.block_json)
@@ -271,10 +287,11 @@ router.post('/pages/:id/versions/:vid/restore', requireAdmin, async (req, res) =
   const previousHtml = previousVersion?.rendered_html || ''
   const assetMap = getAssetMap(block_json)
   const siteSettings = getSiteSettings()
+  const sitePages = getSitePages()
 
   let renderedHtml = null
   try {
-    renderedHtml = await semanticPass({ blockJson: block_json, pageTitle: page.title, pageSlug: page.slug, previousHtml, assetMap, siteSettings })
+    renderedHtml = await semanticPass({ blockJson: block_json, pageTitle: page.title, pageSlug: page.slug, pagePurpose: page.purpose, previousHtml, assetMap, siteSettings, sitePages })
   } catch (err) {
     console.error('LLM semantic pass failed on restore:', err.message)
   }
@@ -452,7 +469,7 @@ router.get('/settings', requireAdmin, (req, res) => {
 })
 
 router.put('/settings', requireAdmin, async (req, res) => {
-  const allowed = ['site_name', 'site_description', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
+  const allowed = ['site_name', 'site_description', 'site_ia', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
   const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
 
   for (const [key, value] of Object.entries(req.body)) {

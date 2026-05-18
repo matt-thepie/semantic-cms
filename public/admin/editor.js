@@ -93,11 +93,16 @@ async function loadPage() {
   const page = await res.json()
   document.title = `${page.title} — Editor`
   document.getElementById('page-title-display').textContent = page.title
+  document.getElementById('page-purpose').value = page.purpose || ''
   blocks = page.block_json
   currentHtml = page.rendered_html
 
   renderBlocks()
 }
+
+document.getElementById('page-purpose').addEventListener('change', async (e) => {
+  await api('PUT', `/pages/${pageId}`, { purpose: e.target.value })
+})
 
 // ─── Block rendering ──────────────────────────────────────────────────────────
 
@@ -764,10 +769,14 @@ async function save() {
   btn.disabled = true
   btn.textContent = 'Saving...'
 
-  // Sync page title
+  // Sync page title and purpose
   const titleEl = document.getElementById('page-title-display')
+  const purposeEl = document.getElementById('page-purpose')
   if (titleEl.textContent) {
-    await api('PUT', `/pages/${pageId}`, { title: titleEl.textContent })
+    await api('PUT', `/pages/${pageId}`, {
+      title: titleEl.textContent,
+      purpose: purposeEl.value,
+    })
   }
 
   const res = await api('POST', `/pages/${pageId}/save`, { block_json: blocks })

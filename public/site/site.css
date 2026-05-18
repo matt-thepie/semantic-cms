@@ -44,12 +44,16 @@ a { color: var(--color-accent) }
 /* ─── Site header ──────────────────────────────────────────────────────────── */
 
 .site-header {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  padding: 0 var(--gap);
+}
+
+.site-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem var(--gap);
-  max-width: var(--content-w);
-  margin: 0 auto;
+  padding: 1rem 0;
   gap: 1rem;
 }
 
@@ -61,14 +65,77 @@ a { color: var(--color-accent) }
   text-decoration: none;
 }
 
-.site-nav {
+/* Hamburger toggle — mobile only */
+.nav-toggle {
   display: flex;
-  gap: 1.25rem;
-  font-family: var(--font-ui);
-  font-size: .9rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
 }
-.site-nav a { color: var(--color-muted); text-decoration: none }
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+  transition: transform .2s ease, opacity .2s ease;
+  transform-origin: center;
+}
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg) }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0 }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg) }
+
+/* Mobile: nav hidden by default, shows below header bar when open */
+.site-nav {
+  display: none;
+  flex-direction: column;
+  gap: .25rem;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  padding: .75rem 0 1rem;
+  border-top: 1px solid var(--color-border);
+}
+.site-nav.open { display: flex }
+.site-nav a {
+  color: var(--color-text);
+  text-decoration: none;
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.site-nav a:last-child { border-bottom: none }
 .site-nav a:hover, .site-nav a.active { color: var(--color-accent) }
+
+/* Tablet+ : horizontal nav, no hamburger */
+@media (min-width: 640px) {
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--gap);
+  }
+  .site-header-bar { padding: 1rem 0; flex: 0 0 auto }
+  .nav-toggle { display: none }
+  .site-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 1.25rem;
+    font-size: .9rem;
+    padding: 0;
+    border-top: none;
+  }
+  .site-nav a {
+    color: var(--color-muted);
+    padding: 0;
+    border-bottom: none;
+  }
+}
 
 /* ─── Main content ─────────────────────────────────────────────────────────── */
 

@@ -54,12 +54,31 @@ Structure:
 
 const BREAKPOINTS = 'mobile: <640px, tablet: 640px–1024px, desktop: >1024px'
 
-export async function semanticPass({ blockJson, pageTitle, pageSlug, previousHtml, assetMap, siteSettings }) {
+function buildSiteContext({ siteSettings, sitePages, pageSlug }) {
+  const ia = siteSettings.site_ia
+    ? `\nSITE_INFORMATION_ARCHITECTURE:\n${siteSettings.site_ia}\n`
+    : ''
+
+  const pagesList = (sitePages || []).map((p, i) => {
+    const marker = p.slug === pageSlug ? ' ← THIS PAGE' : ''
+    const purpose = p.purpose ? ` — ${p.purpose}` : ''
+    return `  ${i + 1}. ${p.title} (/${p.slug})${purpose}${marker}`
+  }).join('\n')
+
+  const pagesBlock = pagesList ? `\nSITE_PAGES (in navigation order):\n${pagesList}\n` : ''
+
+  return `SITE_NAME: ${siteSettings.site_name || ''}
+SITE_DESCRIPTION: ${siteSettings.site_description || ''}${ia}${pagesBlock}`
+}
+
+export async function semanticPass({ blockJson, pageTitle, pageSlug, pagePurpose, previousHtml, assetMap, siteSettings, sitePages }) {
   const prompt = loadPrompt('semantic')
-  const context = `SITE_NAME: ${siteSettings.site_name || ''}
-SITE_DESCRIPTION: ${siteSettings.site_description || ''}
+  const siteContext = buildSiteContext({ siteSettings, sitePages, pageSlug })
+  const purposeLine = pagePurpose ? `\nTHIS_PAGE_PURPOSE: ${pagePurpose}` : ''
+
+  const context = `${siteContext}
 PAGE_TITLE: ${pageTitle}
-PAGE_SLUG: ${pageSlug}
+PAGE_SLUG: ${pageSlug}${purposeLine}
 BREAKPOINTS: ${BREAKPOINTS}
 CLASS_VOCABULARY:
 ${CLASS_VOCABULARY}
@@ -76,12 +95,14 @@ ${JSON.stringify(blockJson, null, 2)}`
   return adapter.complete(prompt, context)
 }
 
-export async function helpPass({ complaint, blockJson, currentHtml, pageTitle, pageSlug, siteSettings }) {
+export async function helpPass({ complaint, blockJson, currentHtml, pageTitle, pageSlug, pagePurpose, siteSettings, sitePages }) {
   const prompt = loadPrompt('semantic')
-  const context = `SITE_NAME: ${siteSettings.site_name || ''}
-SITE_DESCRIPTION: ${siteSettings.site_description || ''}
+  const siteContext = buildSiteContext({ siteSettings, sitePages, pageSlug })
+  const purposeLine = pagePurpose ? `\nTHIS_PAGE_PURPOSE: ${pagePurpose}` : ''
+
+  const context = `${siteContext}
 PAGE_TITLE: ${pageTitle}
-PAGE_SLUG: ${pageSlug}
+PAGE_SLUG: ${pageSlug}${purposeLine}
 BREAKPOINTS: ${BREAKPOINTS}
 CLASS_VOCABULARY:
 ${CLASS_VOCABULARY}

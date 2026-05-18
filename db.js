@@ -53,4 +53,14 @@ db.exec(`
 `)
 // Sessions table is created automatically by better-sqlite3-session-store
 
+// Migrations — idempotent ALTER TABLE statements
+const migrations = [
+  'ALTER TABLE pages ADD COLUMN purpose TEXT',
+]
+for (const m of migrations) {
+  try { db.exec(m) } catch (e) {
+    if (!e.message.includes('duplicate column')) throw e
+  }
+}
+
 export default db

@@ -3,8 +3,45 @@
 const slug = window.location.pathname.replace(/^\//, '') || 'home'
 
 async function init() {
+  setupNavToggle()
   await loadNav()
   await loadPage(slug)
+}
+
+function setupNavToggle() {
+  const toggle = document.getElementById('nav-toggle')
+  const nav = document.getElementById('site-nav')
+  if (!toggle || !nav) return
+
+  toggle.addEventListener('click', e => {
+    e.stopPropagation()
+    const open = nav.classList.toggle('open')
+    toggle.setAttribute('aria-expanded', String(open))
+  })
+
+  // Close when a nav link is clicked
+  nav.addEventListener('click', e => {
+    if (e.target.tagName === 'A') {
+      nav.classList.remove('open')
+      toggle.setAttribute('aria-expanded', 'false')
+    }
+  })
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !toggle.contains(e.target)) {
+      nav.classList.remove('open')
+      toggle.setAttribute('aria-expanded', 'false')
+    }
+  })
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && nav.classList.contains('open')) {
+      nav.classList.remove('open')
+      toggle.setAttribute('aria-expanded', 'false')
+    }
+  })
 }
 
 async function loadNav() {

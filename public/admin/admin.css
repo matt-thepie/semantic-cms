@@ -278,6 +278,7 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 /* ─── Settings ─────────────────────────────────────────────────────────────── */
 
 .settings-form { max-width: 560px }
+.settings-form textarea { width: 100%; resize: vertical; font-family: inherit }
 
 .form-field {
   display: flex;
@@ -442,6 +443,25 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 .help-actions { display: flex; gap: .75rem }
 
 /* ─── Block stack ──────────────────────────────────────────────────────────── */
+
+.page-purpose-input {
+  width: 100%;
+  padding: .5rem .75rem;
+  margin-bottom: 1.5rem;
+  font-size: .85rem;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  font-style: italic;
+}
+.page-purpose-input:focus {
+  border-style: solid;
+  border-color: var(--color-accent);
+  outline: none;
+  color: var(--color-text);
+  font-style: normal;
+}
 
 .block-stack { display: flex; flex-direction: column }
 
