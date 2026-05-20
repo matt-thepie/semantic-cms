@@ -8,6 +8,7 @@ let blocks = []
 let undoStack = []
 let redoStack = []
 let currentHtml = ''
+let dirty = false
 let assetPickerCallback = null
 let assetUrls = {}   // asset id → url, for showing thumbnails
 let assetNames = {}  // asset id → original filename, for showing file names
@@ -36,7 +37,29 @@ function pushUndo() {
   undoStack.push(snapshot())
   redoStack = []
   updateUndoButtons()
+  setDirty(true)
 }
+
+// ─── Unsaved-changes tracking ───────────────────────────────────────────────────
+
+function setDirty(value) {
+  dirty = value
+  const btn = document.getElementById('save-btn')
+  if (!btn) return
+  btn.disabled = !value
+  btn.classList.toggle('btn-primary', value)
+  btn.classList.toggle('btn-ghost', !value)
+  btn.textContent = value ? '● Save changes' : 'Saved'
+}
+
+// Warn before leaving with unsaved work (covers Dashboard link, close, reload).
+window.addEventListener('beforeunload', e => {
+  if (dirty) { e.preventDefault(); e.returnValue = '' }
+})
+
+// Typing in any block or the page title counts as an unsaved change.
+document.getElementById('block-stack').addEventListener('input', () => setDirty(true))
+document.getElementById('page-title-display').addEventListener('input', () => setDirty(true))
 
 function undo() {
   if (!undoStack.length) return
@@ -106,6 +129,7 @@ async function loadPage() {
   currentHtml = page.rendered_html
 
   renderBlocks()
+  setDirty(false)
 }
 
 document.getElementById('page-purpose').addEventListener('change', async (e) => {
@@ -1197,8 +1221,9 @@ async function loadVersions() {
 async function save() {
   const btn = document.getElementById('save-btn')
   btn.disabled = true
-  btn.textContent = 'Saving...'
+  btn.textContent = 'Saving…'
   document.getElementById('save-overlay').hidden = false
+  let ok = false
 
   try {
     // Sync page title and purpose
@@ -1218,6 +1243,7 @@ async function save() {
       undoStack = []
       redoStack = []
       updateUndoButtons()
+      ok = true
       if (data.rendered_html) {
         showSaveStatus('Saved just now')
       } else {
@@ -1228,8 +1254,8 @@ async function save() {
     }
   } finally {
     document.getElementById('save-overlay').hidden = true
-    btn.disabled = false
-    btn.textContent = 'Save'
+    // Clean state if saved; stay dirty (button re-enabled) if it failed.
+    setDirty(!ok)
   }
 }
 

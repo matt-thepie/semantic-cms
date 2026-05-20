@@ -1,6 +1,7 @@
 // Public site — fetch and inject page content from the API
 
 const slug = window.location.pathname.replace(/^\//, '') || 'home'
+let currentPageId = null
 
 async function init() {
   setupNavToggle()
@@ -90,6 +91,8 @@ async function loadPage(slug) {
   }
 
   const page = await res.json()
+  currentPageId = page.id
+  if (adminBarPresent()) updateAdminBarEditLink()
   document.title = page.title + (document.getElementById('site-logo')?.textContent ? ` — ${document.getElementById('site-logo').textContent}` : '')
   document.getElementById('content').innerHTML = page.rendered_html || '<p>This page has no content yet.</p>'
 
@@ -188,5 +191,53 @@ async function loadSiteMeta() {
   } catch {}
 }
 
+// ─── Admin bar (only for signed-in admins) ─────────────────────────────────────
+// Bridges the live site and the editor: while signed in, every page shows an
+// "Edit this page" toolbar so there's no need to hunt for the separate admin area.
+
+function adminBarPresent() { return !!document.getElementById('admin-bar') }
+
+function updateAdminBarEditLink() {
+  const edit = document.getElementById('admin-bar-edit')
+  if (edit && currentPageId) edit.href = `/admin/editor.html?id=${encodeURIComponent(currentPageId)}`
+}
+
+async function setupAdminBar() {
+  let status
+  try { status = await (await fetch('/api/auth/status')).json() } catch { return }
+  if (!status || !status.authenticated) return
+
+  const bar = document.createElement('div')
+  bar.id = 'admin-bar'
+  bar.className = 'admin-bar'
+  bar.setAttribute('role', 'navigation')
+  bar.setAttribute('aria-label', 'Admin toolbar')
+
+  const label = document.createElement('span')
+  label.className = 'admin-bar-label'
+  label.textContent = status.email ? `Signed in as ${status.email}` : 'Signed in'
+  bar.appendChild(label)
+
+  const spacer = document.createElement('span')
+  spacer.className = 'admin-bar-spacer'
+  bar.appendChild(spacer)
+
+  const edit = document.createElement('a')
+  edit.id = 'admin-bar-edit'
+  edit.className = 'admin-bar-btn admin-bar-btn-primary'
+  edit.href = currentPageId ? `/admin/editor.html?id=${encodeURIComponent(currentPageId)}` : '/admin/'
+  edit.textContent = '✎ Edit this page'
+  bar.appendChild(edit)
+
+  const dash = document.createElement('a')
+  dash.className = 'admin-bar-btn'
+  dash.href = '/admin/'
+  dash.textContent = 'Dashboard'
+  bar.appendChild(dash)
+
+  document.body.appendChild(bar)
+  document.body.classList.add('has-admin-bar')
+}
+
 loadSiteMeta()
-init()
+init().then(setupAdminBar)

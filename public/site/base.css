@@ -180,3 +180,60 @@ figcaption {
 /* ─── Page sections ────────────────────────────────────────────────────────── */
 
 .page-section { margin-bottom: 2.5rem }
+
+/* ─── Admin bar (signed-in admins only; injected by site.js) ───────────────────
+   Lives in base.css so the AI design pass can never restyle or remove it. */
+
+body.has-admin-bar { padding-bottom: 4.5rem; }
+
+.admin-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  max-width: calc(100vw - 1.5rem);
+  padding: .5rem .65rem .5rem 1rem;
+  background: #1a1a1a;
+  color: #f0ede8;
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.28);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: .85rem;
+}
+
+.admin-bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 38vw;
+  opacity: .8;
+}
+.admin-bar-spacer { width: .25rem; }
+
+.admin-bar-btn {
+  flex-shrink: 0;
+  padding: .4rem .85rem;
+  border-radius: 999px;
+  color: #f0ede8;
+  text-decoration: none;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.25);
+  transition: background .15s, border-color .15s;
+}
+.admin-bar-btn:hover { background: rgba(255,255,255,.12); text-decoration: none; }
+
+.admin-bar-btn-primary {
+  background: #2d5a3d;
+  border-color: #2d5a3d;
+  font-weight: 600;
+}
+.admin-bar-btn-primary:hover { background: #356b49; border-color: #356b49; }
+
+@media (max-width: 520px) {
+  .admin-bar-label { display: none; }
+  .admin-bar { gap: .4rem; padding: .5rem .55rem; }
+}
