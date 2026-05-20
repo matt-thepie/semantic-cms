@@ -774,7 +774,53 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 
 /* ─── Image / file editors ─────────────────────────────────────────────────── */
 
-.image-editor, .file-editor, .gallery-editor, .resource-list-editor, .list-editor { display: flex; flex-direction: column; gap: .5rem }
+.image-editor, .file-editor, .gallery-editor, .resource-list-editor, .list-editor { display: flex; flex-direction: column; gap: .75rem }
+
+/* Image block — chosen photo thumbnail + chooser */
+.image-chooser { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap }
+.image-thumb {
+  width: 120px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.image-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: .72rem;
+  color: var(--color-muted);
+  background: var(--color-bg);
+  padding: .5rem;
+}
+
+/* Image position picker — visual cards */
+.image-pos-label { display: block; font-size: .85rem; font-weight: 500; margin-bottom: .5rem }
+.pos-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .5rem }
+.pos-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  padding: .5rem .4rem;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: .72rem;
+  text-align: center;
+  color: var(--color-text);
+  transition: border-color .15s, box-shadow .15s;
+}
+.pos-card:hover { border-color: var(--color-muted) }
+.pos-card.active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+.pos-card .layout-wire { width: 100%; max-width: 72px }
 .list-items-input { width: 100%; resize: vertical; font-family: var(--font); line-height: 1.6 }
 .preview-list { margin: 0; padding-left: 1.25rem }
 .preview-list li { margin: 0 }
@@ -782,13 +828,29 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 
 .gallery-item-row, .resource-item-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: .5rem;
+  grid-template-columns: auto 1fr auto;
+  gap: .6rem;
   align-items: center;
   padding: .375rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
+.gallery-thumb {
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+.gallery-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .65rem;
+  color: var(--color-muted);
+  background: var(--color-bg);
+}
+.file-name { font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px }
 
 /* ─── Side panels ──────────────────────────────────────────────────────────── */
 

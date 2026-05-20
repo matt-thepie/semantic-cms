@@ -9,6 +9,8 @@ let undoStack = []
 let redoStack = []
 let currentHtml = ''
 let assetPickerCallback = null
+let assetUrls = {}   // asset id → url, for showing thumbnails
+let assetNames = {}  // asset id → original filename, for showing file names
 
 async function api(method, path, body) {
   const opts = { method, headers: {} }
@@ -87,6 +89,12 @@ document.addEventListener('click', e => {
 // ─── Load page ────────────────────────────────────────────────────────────────
 
 async function loadPage() {
+  // Cache asset id→url so image blocks can show thumbnails on first render
+  try {
+    const assets = await (await fetch('/api/assets')).json()
+    if (Array.isArray(assets)) for (const a of assets) { assetUrls[a.id] = a.bucket_url; assetNames[a.id] = a.filename }
+  } catch {}
+
   const res = await api('GET', `/pages/${pageId}/content`)
   if (!res.ok) { alert('Page not found'); window.location.href = '/admin/'; return }
 
@@ -484,9 +492,9 @@ function buildBlockEditor(block, index) {
 }
 
 function buildToolbar(block, index) {
-  const moveControls = `<button class="toolbar-btn" data-action="move-up" title="Move up">↑</button>
-    <button class="toolbar-btn" data-action="move-down" title="Move down">↓</button>`
-  const deleteBtn = `<button class="toolbar-btn toolbar-btn-danger" data-action="delete" title="Delete">🗑</button>`
+  const moveControls = `<button class="toolbar-btn" data-action="move-up" title="Move this up">↑ Up</button>
+    <button class="toolbar-btn" data-action="move-down" title="Move this down">↓ Down</button>`
+  const deleteBtn = `<button class="toolbar-btn toolbar-btn-danger" data-action="delete" title="Delete this block">🗑 Delete</button>`
 
   let specific = ''
   switch (block.type) {
@@ -494,32 +502,26 @@ function buildToolbar(block, index) {
       specific = `<button class="toolbar-btn" data-fmt="bold" title="Bold"><b>B</b></button>
         <button class="toolbar-btn" data-fmt="italic" title="Italic"><i>I</i></button>
         <button class="toolbar-btn" data-fmt="underline" title="Underline"><u>U</u></button>
-        <button class="toolbar-btn" data-fmt="link" title="Add link">🔗</button>
+        <button class="toolbar-btn" data-fmt="link" title="Add a link">🔗 Link</button>
         <span class="toolbar-sep"></span>
-        <button class="toolbar-btn" data-transform="heading" title="Convert to heading">↕ Heading</button>
-        <button class="toolbar-btn" data-transform="list" title="Convert to list">↕ List</button>
+        <button class="toolbar-btn" data-transform="heading" title="Turn this into a heading">Make heading</button>
+        <button class="toolbar-btn" data-transform="list" title="Turn this into a list">Make list</button>
         <span class="toolbar-sep"></span>`
       break
     case 'heading':
-      specific = `<button class="toolbar-btn ${block.content.level===1?'active':''}" data-level="1">H1</button>
-        <button class="toolbar-btn ${block.content.level===2?'active':''}" data-level="2">H2</button>
-        <button class="toolbar-btn ${block.content.level===3?'active':''}" data-level="3">H3</button>
+      specific = `<span class="toolbar-grouplabel">Size:</span>
+        <button class="toolbar-btn ${block.content.level===1?'active':''}" data-level="1" title="Large heading">Large</button>
+        <button class="toolbar-btn ${block.content.level===2?'active':''}" data-level="2" title="Medium heading">Medium</button>
+        <button class="toolbar-btn ${block.content.level===3?'active':''}" data-level="3" title="Small heading">Small</button>
         <span class="toolbar-sep"></span>
-        <button class="toolbar-btn" data-transform="paragraph" title="Convert to text">↕ Text</button>
+        <button class="toolbar-btn" data-transform="paragraph" title="Turn this back into normal text">Make text</button>
         <span class="toolbar-sep"></span>`
       break
     case 'list':
-      specific = `<button class="toolbar-btn ${!block.content.ordered?'active':''}" data-list-style="bullet" title="Bulleted">• List</button>
-        <button class="toolbar-btn ${block.content.ordered?'active':''}" data-list-style="number" title="Numbered">1. List</button>
+      specific = `<button class="toolbar-btn ${!block.content.ordered?'active':''}" data-list-style="bullet" title="Bulleted list">• Bullets</button>
+        <button class="toolbar-btn ${block.content.ordered?'active':''}" data-list-style="number" title="Numbered list">1. Numbers</button>
         <span class="toolbar-sep"></span>
-        <button class="toolbar-btn" data-transform="paragraph" title="Convert to text">↕ Text</button>
-        <span class="toolbar-sep"></span>`
-      break
-    case 'image':
-      specific = `<button class="toolbar-btn ${block.meta.flow==='left'?'active':''}" data-flow="left" title="Float left">◧</button>
-        <button class="toolbar-btn ${block.meta.flow==='full'?'active':''}" data-flow="full" title="Full width">▣</button>
-        <button class="toolbar-btn ${block.meta.flow==='right'?'active':''}" data-flow="right" title="Float right">◨</button>
-        <button class="toolbar-btn ${block.meta.flow==='center'?'active':''}" data-flow="center" title="Center">◫</button>
+        <button class="toolbar-btn" data-transform="paragraph" title="Turn this back into normal text">Make text</button>
         <span class="toolbar-sep"></span>`
       break
   }
@@ -588,17 +590,41 @@ function buildEditorBody(block, index) {
     }
 
     case 'image': {
-      const assetInfo = block.content.asset ? `Asset: ${block.content.asset}` : 'No image selected'
+      const url = assetUrls[block.content.asset]
+      const flow = block.meta.flow || 'full'
+      const thumb = block.content.asset && url
+        ? `<img src="${url}" alt="" class="image-thumb">`
+        : `<div class="image-thumb image-thumb-empty">No photo chosen yet</div>`
+
+      const posCard = (val, label, svg) =>
+        `<button type="button" class="pos-card ${flow === val ? 'active' : ''}" data-flow="${val}">
+           <svg viewBox="0 0 60 40" class="layout-wire" aria-hidden="true">${svg}</svg>
+           <span>${label}</span>
+         </button>`
+
       div.innerHTML = `
         <div class="image-editor">
-          <button class="btn btn-ghost asset-pick-btn">Click to ${block.content.asset ? 'replace' : 'choose'} image</button>
-          <p class="muted">${assetInfo}</p>
+          <div class="image-chooser">
+            ${thumb}
+            <button class="btn btn-ghost asset-pick-btn">${block.content.asset ? 'Choose a different photo' : 'Choose a photo'}</button>
+          </div>
+
+          <div class="image-pos">
+            <label class="image-pos-label">Where should this photo sit?</label>
+            <div class="pos-picker">
+              ${posCard('full', 'Full width', '<rect class="nav-bar" x="4" y="4" width="52" height="16" rx="2"/><rect class="nav-line" x="4" y="25" width="52" height="3" rx="1"/><rect class="nav-line" x="4" y="31" width="40" height="3" rx="1"/>')}
+              ${posCard('left', 'Left, text wraps', '<rect class="nav-bar" x="4" y="4" width="22" height="22" rx="2"/><rect class="nav-line" x="30" y="6" width="26" height="3" rx="1"/><rect class="nav-line" x="30" y="12" width="26" height="3" rx="1"/><rect class="nav-line" x="30" y="18" width="20" height="3" rx="1"/><rect class="nav-line" x="4" y="31" width="52" height="3" rx="1"/>')}
+              ${posCard('right', 'Right, text wraps', '<rect class="nav-bar" x="34" y="4" width="22" height="22" rx="2"/><rect class="nav-line" x="4" y="6" width="26" height="3" rx="1"/><rect class="nav-line" x="4" y="12" width="26" height="3" rx="1"/><rect class="nav-line" x="4" y="18" width="20" height="3" rx="1"/><rect class="nav-line" x="4" y="31" width="52" height="3" rx="1"/>')}
+              ${posCard('center', 'Centered', '<rect class="nav-bar" x="16" y="4" width="28" height="16" rx="2"/><rect class="nav-line" x="4" y="25" width="52" height="3" rx="1"/><rect class="nav-line" x="4" y="31" width="40" height="3" rx="1"/>')}
+            </div>
+          </div>
+
           <div class="form-field">
-            <label>Caption (optional)</label>
+            <label>Caption <span class="muted">(optional — shown under the photo)</span></label>
             <input type="text" class="caption-input" value="${escAttr(spansToPlain(block.content.caption))}">
           </div>
           <div class="form-field">
-            <label>Alt text override <span class="muted">(leave blank to auto-generate)</span></label>
+            <label>Description for screen readers <span class="muted">(leave blank and the AI writes it for you)</span></label>
             <input type="text" class="alt-input" value="${escAttr(block.content.alt || '')}">
           </div>
         </div>
@@ -607,6 +633,7 @@ function buildEditorBody(block, index) {
         openAssetPicker(asset => {
           pushUndo()
           block.content.asset = asset.id
+          if (asset.url) assetUrls[asset.id] = asset.url
           activateBlock(index)
         })
       })
@@ -616,9 +643,8 @@ function buildEditorBody(block, index) {
       div.querySelector('.alt-input').addEventListener('change', e => {
         block.content.alt = e.target.value || undefined
       })
-      div.addEventListener('click', e => {
-        const flow = e.target.dataset?.flow
-        if (flow) { pushUndo(); block.meta.flow = flow; activateBlock(index) }
+      div.querySelectorAll('[data-flow]').forEach(btn => {
+        btn.addEventListener('click', () => { pushUndo(); block.meta.flow = btn.dataset.flow; activateBlock(index) })
       })
       break
     }
@@ -629,12 +655,12 @@ function buildEditorBody(block, index) {
         <div class="gallery-editor">
           <div class="gallery-items">${items.map((item, i) => `
             <div class="gallery-item-row" data-i="${i}">
-              <span>${item.asset || 'No asset'}</span>
-              <input type="text" class="gallery-caption" placeholder="Caption" value="${escAttr(spansToPlain(item.caption))}">
-              <button class="btn-icon gallery-item-remove" data-i="${i}">✕</button>
+              ${assetUrls[item.asset] ? `<img src="${assetUrls[item.asset]}" alt="" class="gallery-thumb">` : `<span class="gallery-thumb gallery-thumb-empty">No photo</span>`}
+              <input type="text" class="gallery-caption" placeholder="Caption (optional)" value="${escAttr(spansToPlain(item.caption))}">
+              <button class="btn-icon gallery-item-remove" data-i="${i}" title="Remove this photo">✕</button>
             </div>
           `).join('')}</div>
-          <button class="btn btn-ghost gallery-add-btn">+ Add image</button>
+          <button class="btn btn-ghost gallery-add-btn">+ Add photo</button>
         </div>
       `
       div.querySelector('.gallery-add-btn').addEventListener('click', () => {
@@ -699,9 +725,9 @@ function buildEditorBody(block, index) {
         <div class="resource-list-editor">
           ${items.map((item, i) => `
             <div class="resource-item-row" data-i="${i}">
-              <span class="muted">${item.asset || 'no asset'}</span>
-              <input type="text" class="item-label" placeholder="Label" value="${escAttr(spansToPlain(item.label))}">
-              <button class="btn-icon item-remove" data-i="${i}">✕</button>
+              <span class="muted file-name">📎 ${assetNames[item.asset] || 'No file chosen'}</span>
+              <input type="text" class="item-label" placeholder="Label shown to visitors" value="${escAttr(spansToPlain(item.label))}">
+              <button class="btn-icon item-remove" data-i="${i}" title="Remove this file">✕</button>
             </div>
           `).join('')}
           <button class="btn btn-ghost add-file-btn">+ Add file</button>
@@ -776,6 +802,7 @@ async function openAssetPicker(callback) {
 
   const res = await fetch('/api/assets')
   currentAssets = await res.json()
+  for (const a of currentAssets) { assetUrls[a.id] = a.bucket_url; assetNames[a.id] = a.filename }
   renderAssetPanelGrid(currentAssets)
   document.getElementById('asset-search').value = ''
 
