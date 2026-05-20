@@ -996,34 +996,39 @@ async function save() {
   const btn = document.getElementById('save-btn')
   btn.disabled = true
   btn.textContent = 'Saving...'
+  document.getElementById('save-overlay').hidden = false
 
-  // Sync page title and purpose
-  const titleEl = document.getElementById('page-title-display')
-  const purposeEl = document.getElementById('page-purpose')
-  if (titleEl.textContent) {
-    await api('PUT', `/pages/${pageId}`, {
-      title: titleEl.textContent,
-      purpose: purposeEl.value,
-    })
-  }
-
-  const res = await api('POST', `/pages/${pageId}/save`, { block_json: blocks })
-  if (res.ok) {
-    const data = await res.json()
-    currentHtml = data.rendered_html || ''
-    undoStack = []
-    redoStack = []
-    updateUndoButtons()
-    showSaveStatus('Saved just now')
-    if (!data.rendered_html) {
-      showSaveStatus('Content saved but HTML could not be generated. Try saving again.', true)
+  try {
+    // Sync page title and purpose
+    const titleEl = document.getElementById('page-title-display')
+    const purposeEl = document.getElementById('page-purpose')
+    if (titleEl.textContent) {
+      await api('PUT', `/pages/${pageId}`, {
+        title: titleEl.textContent,
+        purpose: purposeEl.value,
+      })
     }
-  } else {
-    showSaveStatus('Save failed.', true)
-  }
 
-  btn.disabled = false
-  btn.textContent = 'Save'
+    const res = await api('POST', `/pages/${pageId}/save`, { block_json: blocks })
+    if (res.ok) {
+      const data = await res.json()
+      currentHtml = data.rendered_html || ''
+      undoStack = []
+      redoStack = []
+      updateUndoButtons()
+      if (data.rendered_html) {
+        showSaveStatus('Saved just now')
+      } else {
+        showSaveStatus('Content saved but HTML could not be generated. Try saving again.', true)
+      }
+    } else {
+      showSaveStatus('Save failed.', true)
+    }
+  } finally {
+    document.getElementById('save-overlay').hidden = true
+    btn.disabled = false
+    btn.textContent = 'Save'
+  }
 }
 
 function showSaveStatus(msg, isError = false) {

@@ -56,8 +56,7 @@ a { color: var(--color-accent) }
 .site-header {
   background-color: var(--color-header-bg);
   background-image:
-    linear-gradient(var(--color-header-overlay), var(--color-header-overlay)),
-    url('https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1400&q=80');
+    linear-gradient(var(--color-header-overlay), var(--color-header-overlay));
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;

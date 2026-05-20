@@ -171,8 +171,8 @@ Return ONLY the JSON array, nothing else.`
 
 export async function designPass({ brief, currentCss, allPageHtml, imageUrls = [] }) {
   const imageRule = imageUrls.length
-    ? '\n- The user wants imagery. Use the provided AVAILABLE_IMAGES as CSS background-image values (e.g. on the header, hero, or body) where the brief calls for it. Use the exact URLs given. Add overlays/gradients as needed for text legibility.'
-    : ''
+    ? '\n- The user wants imagery. Use the provided AVAILABLE_IMAGES as CSS background-image values (e.g. on the header, hero, or body) where the brief calls for it. Use the EXACT URLs given, character for character. Add overlays/gradients as needed for text legibility.'
+    : '\n- No images are available for this design. Do NOT use any photographic background images — use colours and gradients only.'
 
   const prompt = `You are a CSS designer for a small personal website. You will receive the current stylesheet, all page HTML fragments it styles, and a plain-English design brief from the site owner.
 
@@ -186,7 +186,8 @@ RULES
 - Preserve the existing CSS custom property names — you may change their values.
 - You may add new custom properties to :root if needed, but keep the set minimal.
 - Structural and component selectors (site-header, site-nav, site-footer, flow-left, flow-right, gallery-grid, contact-form, form-field, image-credit, etc.) must all survive — only change their visual properties if the brief calls for it.
-- Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.${imageRule}`
+- Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.
+- NEVER invent, guess, or hardcode any external image URL (such as images.unsplash.com/... or any other photo URL). The ONLY image URLs permitted are those listed verbatim in AVAILABLE_IMAGES. Using any other external image URL is forbidden — it has no licence or attribution. If you want imagery but none is provided, use colours/gradients instead.${imageRule}`
 
   const imagesBlock = imageUrls.length
     ? `\n\nAVAILABLE_IMAGES (royalty-free, already hosted — use these exact URLs):\n${imageUrls.map(u => `- ${u}`).join('\n')}`

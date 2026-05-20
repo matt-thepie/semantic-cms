@@ -157,8 +157,9 @@
   <dialog id="tidy-css-dialog">
     <h2>Tidy CSS</h2>
     <p>This will refactor the site stylesheet using AI. It won't change how the site looks, but it will clean up the underlying CSS. This may take 10–20 seconds.</p>
-    <div id="tidy-progress" hidden>
-      <p class="muted">Refactoring...</p>
+    <div id="tidy-progress" hidden style="text-align:center">
+      <div class="spinner"></div>
+      <p class="muted">Tidying your stylesheet…</p>
     </div>
     <div id="tidy-result" hidden></div>
     <div class="dialog-actions" id="tidy-actions">

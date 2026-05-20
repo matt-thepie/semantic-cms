@@ -540,6 +540,23 @@ function preserveStructuralRules(oldCss, newCss) {
   return `${newCss}\n\n/* Auto-restored structural rules the design pass dropped */\n${unique.join('\n\n')}`
 }
 
+// Strip any external image URL the LLM may have invented/hardcoded that isn't
+// in our tracked, attributed allow-list. Untracked external images have no
+// licence or attribution, so we replace them with `none`. Relative URLs (our
+// own assets) and data URIs are always kept.
+function stripUntrackedImageUrls(css, allowedUrls = []) {
+  const allowed = new Set(allowedUrls)
+  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi, (match, _q, url) => {
+    const u = url.trim()
+    if (u.startsWith('data:') || u.startsWith('/') || u.startsWith('./') || u.startsWith('../')) return match
+    if (!/^https?:\/\//i.test(u)) return match
+    if (allowed.has(u)) return match
+    // External absolute URL not in our tracked set — drop it
+    console.warn('Stripped untracked external image URL from design CSS:', u)
+    return 'none'
+  })
+}
+
 // Streams progress as newline-delimited JSON while it works, then a final
 // { done, updated_css } event. Does NOT apply the CSS — the client previews
 // it and confirms via PUT /api/css.
@@ -588,6 +605,8 @@ router.post('/css/design', requireAdmin, async (req, res) => {
 
     send({ phase: 'Checking nothing got broken…' })
     updatedCss = preserveStructuralRules(currentCss, updatedCss)
+    // Drop any external image URL the LLM invented outside our tracked set
+    updatedCss = stripUntrackedImageUrls(updatedCss, imageUrls)
 
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
       .run('image_credits', JSON.stringify(credits))
