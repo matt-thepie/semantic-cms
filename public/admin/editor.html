@@ -61,12 +61,32 @@
       <h2>Choose an asset</h2>
       <button class="btn-icon panel-close" data-panel="asset-panel">✕</button>
     </div>
-    <div class="asset-search-bar">
-      <input type="search" id="asset-search" placeholder="Search..." autocomplete="off">
+
+    <div class="asset-tabs">
+      <button class="asset-tab active" data-asset-tab="library">My media</button>
+      <button class="asset-tab" data-asset-tab="search" id="asset-tab-search">Find a photo</button>
     </div>
-    <button class="btn btn-ghost asset-upload-btn" id="asset-panel-upload">+ Upload new</button>
-    <input type="file" id="asset-panel-file-input" accept="image/*,application/pdf" hidden>
-    <div id="asset-panel-grid" class="asset-grid"></div>
+
+    <!-- Library tab -->
+    <div id="asset-tab-library" class="asset-tab-panel">
+      <div class="asset-search-bar">
+        <input type="search" id="asset-search" placeholder="Filter your media..." autocomplete="off">
+      </div>
+      <button class="btn btn-ghost asset-upload-btn" id="asset-panel-upload">+ Upload new</button>
+      <input type="file" id="asset-panel-file-input" accept="image/*,application/pdf" hidden>
+      <div id="asset-panel-grid" class="asset-grid"></div>
+    </div>
+
+    <!-- AI search tab -->
+    <div id="asset-tab-search-panel" class="asset-tab-panel" hidden>
+      <div class="asset-search-bar">
+        <input type="search" id="image-search-input" placeholder="Describe the photo you want…" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="image-search-btn">Search</button>
+      </div>
+      <p class="muted image-search-hint">Royalty-free photos from Unsplash. Click one to add it to your media.</p>
+      <p id="image-search-status" class="muted" hidden></p>
+      <div id="image-search-grid" class="asset-grid"></div>
+    </div>
   </aside>
 
   <!-- Block picker template (cloned into DOM by editor.js) -->

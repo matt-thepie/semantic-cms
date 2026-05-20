@@ -35,7 +35,10 @@ function spansToText(spans) {
 
 function buildAssetMapText(assetMap) {
   return Object.entries(assetMap)
-    .map(([id, { url, filename }]) => `  ${id}: { url: "${url}", filename: "${filename}" }`)
+    .map(([id, { url, filename, credit, creditUrl }]) => {
+      const creditPart = credit ? `, credit: "${credit}", creditUrl: "${creditUrl}"` : ''
+      return `  ${id}: { url: "${url}", filename: "${filename}"${creditPart} }`
+    })
     .join('\n')
 }
 
@@ -130,7 +133,27 @@ ${JSON.stringify(blockJson, null, 2)}`
   return stripFences(await adapter.complete(prompt, context))
 }
 
-export async function designPass({ brief, currentCss, allPageHtml }) {
+// Ask the model whether a design brief calls for photographic imagery, and if
+// so for 1-2 short stock-photo search queries. Returns [] when no imagery is wanted.
+export async function suggestImageQueries(brief) {
+  const prompt = `A website owner gave a design brief. If it calls for photographic imagery (a hero image, background photo, banner, etc.), return a JSON array of 1-2 short image search queries (2-4 words each) suitable for a stock photo site. If it does NOT call for imagery, return [].
+Return ONLY the JSON array, nothing else.`
+  try {
+    const out = await adapter.complete(prompt, `BRIEF: ${brief}`)
+    const match = out.match(/\[[\s\S]*\]/)
+    if (!match) return []
+    const arr = JSON.parse(match[0])
+    return Array.isArray(arr) ? arr.filter(q => typeof q === 'string' && q.trim()).slice(0, 2) : []
+  } catch {
+    return []
+  }
+}
+
+export async function designPass({ brief, currentCss, allPageHtml, imageUrls = [] }) {
+  const imageRule = imageUrls.length
+    ? '\n- The user wants imagery. Use the provided AVAILABLE_IMAGES as CSS background-image values (e.g. on the header, hero, or body) where the brief calls for it. Use the exact URLs given. Add overlays/gradients as needed for text legibility.'
+    : ''
+
   const prompt = `You are a CSS designer for a small personal website. You will receive the current stylesheet, all page HTML fragments it styles, and a plain-English design brief from the site owner.
 
 Your job is to update the stylesheet so it reflects the brief — changing colours, fonts, spacing, layout, or whatever the brief calls for — without breaking any functionality.
@@ -142,9 +165,13 @@ RULES
 - Preserve the existing CSS custom property names — you may change their values.
 - You may add new custom properties to :root if needed, but keep the set minimal.
 - Do not remove any structural class rules (flow-left, gallery-grid, contact-form, etc.) — only change their visual properties if the brief calls for it.
-- Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.`
+- Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.${imageRule}`
 
-  const context = `DESIGN BRIEF: ${brief}
+  const imagesBlock = imageUrls.length
+    ? `\n\nAVAILABLE_IMAGES (royalty-free, already hosted — use these exact URLs):\n${imageUrls.map(u => `- ${u}`).join('\n')}`
+    : ''
+
+  const context = `DESIGN BRIEF: ${brief}${imagesBlock}
 
 CURRENT CSS:
 ${currentCss}

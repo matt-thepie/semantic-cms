@@ -630,6 +630,7 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 .list-items-input { width: 100%; resize: vertical; font-family: var(--font); line-height: 1.6 }
 .preview-list { margin: 0; padding-left: 1.25rem }
 .preview-list li { margin: 0 }
+.preview-empty { color: var(--color-muted); font-style: italic; opacity: .7 }
 
 .gallery-item-row, .resource-item-row {
   display: grid;
@@ -670,8 +671,26 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 }
 .side-panel-header h2 { font-size: 1rem }
 
-.asset-search-bar { padding: .75rem 1rem; border-bottom: 1px solid var(--color-border) }
+.asset-tabs { display: flex; border-bottom: 1px solid var(--color-border) }
+.asset-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: .65rem .5rem;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.asset-tab:hover { color: var(--color-text) }
+.asset-tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent) }
+
+.asset-search-bar { padding: .75rem 1rem; border-bottom: 1px solid var(--color-border); display: flex; gap: .5rem; align-items: center }
 .asset-search-bar input { width: 100% }
+.image-search-hint { padding: .5rem 1rem 0 }
+#image-search-status { padding: .5rem 1rem }
 .asset-upload-btn { margin: .75rem 1rem; display: block }
 #asset-panel-grid { padding: .75rem 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem }
 

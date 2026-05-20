@@ -46,7 +46,7 @@ function setupNavToggle() {
 
 async function loadNav() {
   try {
-    const res = await fetch('/api/pages')
+    const res = await fetch('/api/nav')
     if (!res.ok) return
     const pages = await res.json()
     const nav = document.getElementById('site-nav')
@@ -140,20 +140,30 @@ function wireContactForm(form) {
   })
 }
 
-// Load site name into header/footer from the nav response
+// Load site name + image credits into header/footer (public-safe endpoint)
 async function loadSiteMeta() {
   try {
-    const res = await fetch('/api/settings')
+    const res = await fetch('/api/site-meta')
     if (!res.ok) return
-    const settings = await res.json()
-    const name = settings.site_name || ''
+    const meta = await res.json()
+    const name = meta.site_name || ''
     const logoEl = document.getElementById('site-logo')
     if (logoEl && name) logoEl.textContent = name
     const footerEl = document.getElementById('site-footer-name')
     if (footerEl && name) footerEl.textContent = `© ${new Date().getFullYear()} ${name}`
+
+    // Attribute background photos pulled in via the design feature (Unsplash requirement)
+    const credits = meta.image_credits || []
+    if (credits.length) {
+      const creditEl = document.getElementById('site-footer-credits')
+      if (creditEl) {
+        creditEl.innerHTML = 'Background photos: ' + credits.map(c =>
+          `<a href="${c.url}?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">${c.name}</a>`
+        ).join(', ') + ' on <a href="https://unsplash.com?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>'
+      }
+    }
   } catch {}
 }
 
-// Settings are public-readable for nav; they don't contain sensitive data
 loadSiteMeta()
 init()

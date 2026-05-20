@@ -9,6 +9,10 @@ const config = {
     model:   process.env.LLM_MODEL,
   },
 
+  unsplash: {
+    accessKey: process.env.UNSPLASH_ACCESS_KEY,
+  },
+
   storage: {
     adapter:     process.env.STORAGE_ADAPTER || 'local',
     bucket:      process.env.STORAGE_BUCKET,

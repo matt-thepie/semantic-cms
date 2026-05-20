@@ -9,8 +9,9 @@ import db from '../db.js'
 import { requireAdmin, checkAdminPassword, changeAdminPassword } from '../services/auth.js'
 import { describeChange, nextPageId, nextAssetId } from '../services/versions.js'
 import { uploadAsset, deleteAsset } from '../services/storage.js'
-import { semanticPass, helpPass, cssAudit, designPass } from '../services/llm.js'
+import { semanticPass, helpPass, cssAudit, designPass, suggestImageQueries } from '../services/llm.js'
 import { sendContactEmail, sendTestEmail } from '../services/mailer.js'
+import { searchPhotos, trackDownload, isConfigured as unsplashConfigured } from '../services/imagesearch.js'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
@@ -44,8 +45,10 @@ function getAssetMap(blockJson) {
   collect(blockJson)
   if (!ids.size) return {}
   const placeholders = [...ids].map(() => '?').join(',')
-  const assets = db.prepare(`SELECT id, filename, bucket_url FROM assets WHERE id IN (${placeholders})`).all(...ids)
-  return Object.fromEntries(assets.map(a => [a.id, { url: a.bucket_url, filename: a.filename }]))
+  const assets = db.prepare(`SELECT id, filename, bucket_url, credit, credit_url FROM assets WHERE id IN (${placeholders})`).all(...ids)
+  return Object.fromEntries(assets.map(a => [a.id, {
+    url: a.bucket_url, filename: a.filename, credit: a.credit || null, creditUrl: a.credit_url || null,
+  }]))
 }
 
 function updateAssetUsage(pageId, blockJson) {
@@ -67,6 +70,35 @@ function slugify(str) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+// Download a remote image, process it through sharp (resize + WebP variant),
+// upload via the storage adapter, and create an asset row. Returns the asset.
+async function importImageFromUrl({ url, filename, credit, creditUrl }) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch image (${res.status})`)
+  const buffer = Buffer.from(await res.arrayBuffer())
+
+  const base = slugify(filename || 'image').slice(0, 60) || 'image'
+  const id = nextAssetId(db)
+  const ts = now()
+
+  const processed = await sharp(buffer)
+    .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer()
+  const webpBuffer = await sharp(buffer)
+    .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer()
+
+  await uploadAsset(webpBuffer, `${base}.webp`, 'image/webp')
+  const { url: bucketUrl } = await uploadAsset(processed, `${base}.jpg`, 'image/jpeg')
+
+  db.prepare('INSERT INTO assets (id, filename, bucket_url, mime, size, credit, credit_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, `${base}.jpg`, bucketUrl, 'image/jpeg', processed.length, credit || null, creditUrl || null, ts)
+
+  return { id, filename: `${base}.jpg`, url: bucketUrl, credit, creditUrl }
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -97,6 +129,28 @@ router.get('/pages', requireAdmin, (req, res) => {
     FROM pages WHERE deleted_at IS NULL ORDER BY nav_order ASC, created_at ASC
   `).all()
   res.json(pages.map(p => ({ ...p, protected: !!p.protected })))
+})
+
+// Public navigation list (no sensitive fields)
+router.get('/nav', (req, res) => {
+  const pages = db.prepare(`
+    SELECT slug, title FROM pages WHERE deleted_at IS NULL
+    ORDER BY nav_order ASC, created_at ASC
+  `).all()
+  res.json(pages)
+})
+
+// Public site metadata (only safe, public fields)
+router.get('/site-meta', (req, res) => {
+  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits')").all()
+  const s = Object.fromEntries(rows.map(r => [r.key, r.value]))
+  let imageCredits = []
+  try { imageCredits = JSON.parse(s.image_credits || '[]') } catch {}
+  res.json({
+    site_name: s.site_name || '',
+    site_description: s.site_description || '',
+    image_credits: imageCredits,
+  })
 })
 
 router.get('/pages/:slug', (req, res) => {
@@ -320,6 +374,44 @@ router.get('/assets', requireAdmin, (req, res) => {
   })))
 })
 
+// ─── AI image search (Unsplash) ───────────────────────────────────────────────
+
+router.get('/images/search', requireAdmin, async (req, res) => {
+  if (!unsplashConfigured()) return res.status(503).json({ error: 'Image search is not configured' })
+  const q = (req.query.q || '').trim()
+  if (!q) return res.status(400).json({ error: 'query required' })
+  try {
+    const results = await searchPhotos(q, 12)
+    res.json({ results })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+})
+
+router.post('/images/import', requireAdmin, async (req, res) => {
+  const { fullUrl, description, creditName, creditUrl, downloadLocation } = req.body
+  if (!fullUrl) return res.status(400).json({ error: 'fullUrl required' })
+
+  // Unsplash API terms require: (1) hotlinking to their image URL — we must NOT
+  // download and re-host; (2) triggering the download endpoint when a photo is
+  // used; (3) attributing the photographer + Unsplash.
+  trackDownload(downloadLocation)
+
+  const id = nextAssetId(db)
+  const ts = now()
+  const filename = (description ? slugify(description).slice(0, 50) : 'unsplash-photo') || 'unsplash-photo'
+  const credit = `Photo by ${creditName || 'Unknown'} on Unsplash`
+
+  db.prepare('INSERT INTO assets (id, filename, bucket_url, mime, size, credit, credit_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, filename, fullUrl, 'image/jpeg', 0, credit, creditUrl || 'https://unsplash.com', ts)
+
+  res.status(201).json({ id, filename, url: fullUrl, credit, creditUrl })
+})
+
+router.get('/images/status', requireAdmin, (req, res) => {
+  res.json({ configured: unsplashConfigured() })
+})
+
 router.post('/assets', requireAdmin, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
@@ -401,8 +493,33 @@ router.post('/css/design', requireAdmin, async (req, res) => {
   const allPageHtml = pages.map(p => p.rendered_html)
 
   try {
-    const updatedCss = await designPass({ brief, currentCss, allPageHtml })
-    res.json({ updated_css: updatedCss })
+    // If the brief calls for imagery and Unsplash is configured, fetch
+    // hotlinkable background photos (per Unsplash terms we hotlink, never
+    // re-host) and collect their credits for footer attribution.
+    let imageUrls = []
+    const credits = []
+    if (unsplashConfigured()) {
+      const queries = await suggestImageQueries(brief)
+      for (const q of queries) {
+        try {
+          const results = await searchPhotos(q, 1)
+          const r = results[0]
+          if (r) {
+            trackDownload(r.downloadLocation)
+            imageUrls.push(r.fullUrl)
+            credits.push({ name: r.creditName, url: r.creditUrl })
+          }
+        } catch (e) { console.error('design image fetch failed:', e.message) }
+      }
+    }
+
+    const updatedCss = await designPass({ brief, currentCss, allPageHtml, imageUrls })
+
+    // Persist credits so the public footer can attribute background photos
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+      .run('image_credits', JSON.stringify(credits))
+
+    res.json({ updated_css: updatedCss, images_added: imageUrls.length })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

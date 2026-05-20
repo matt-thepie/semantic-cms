@@ -136,11 +136,12 @@ function escAttr(str) {
 }
 
 function blockPreview(block) {
+  const emptyHint = '<span class="preview-empty">Empty — click to edit</span>'
   switch (block.type) {
     case 'heading':
-      return `<h${block.content.level} class="preview-heading">${spansToHtml(block.content.text)}</h${block.content.level}>`
+      return `<h${block.content.level} class="preview-heading">${spansToHtml(block.content.text) || emptyHint}</h${block.content.level}>`
     case 'paragraph':
-      return `<p>${spansToHtml(block.content.text)}</p>`
+      return `<p>${spansToHtml(block.content.text) || emptyHint}</p>`
     case 'list': {
       const tag = block.content.ordered ? 'ol' : 'ul'
       const items = (block.content.items || []).map(item => `<li>${spansToHtml(item)}</li>`).join('')
@@ -262,7 +263,9 @@ function showBlockPicker(afterIndex, anchor) {
 }
 
 function closeAllPopovers() {
-  document.querySelectorAll('.block-picker, .block-toolbar').forEach(el => el.remove())
+  // Only remove pickers — the toolbar is part of the active block editor and
+  // must not be stripped out (that would leave a block with no delete button).
+  document.querySelectorAll('.block-picker').forEach(el => el.remove())
   activePicker = null
 }
 
@@ -679,20 +682,35 @@ function placeCursorAtEnd(el) {
 
 // ─── Asset picker ─────────────────────────────────────────────────────────────
 
+let currentAssets = []
+
+function selectAsset(asset) {
+  document.getElementById('asset-panel').hidden = true
+  if (assetPickerCallback) assetPickerCallback(asset)
+  assetPickerCallback = null
+}
+
+function switchAssetTab(tab) {
+  document.querySelectorAll('.asset-tab').forEach(b => b.classList.toggle('active', b.dataset.assetTab === tab))
+  document.getElementById('asset-tab-library').hidden = tab !== 'library'
+  document.getElementById('asset-tab-search-panel').hidden = tab !== 'search'
+}
+
 async function openAssetPicker(callback) {
   assetPickerCallback = callback
-  const panel = document.getElementById('asset-panel')
-  panel.hidden = false
+  document.getElementById('asset-panel').hidden = false
+  switchAssetTab('library')
 
-  const res = await fetch('/api/assets', { headers: {} })
-  const assets = await res.json()
-  renderAssetPanelGrid(assets)
-
+  const res = await fetch('/api/assets')
+  currentAssets = await res.json()
+  renderAssetPanelGrid(currentAssets)
   document.getElementById('asset-search').value = ''
-  document.getElementById('asset-search').addEventListener('input', e => {
-    const q = e.target.value.toLowerCase()
-    renderAssetPanelGrid(assets.filter(a => a.filename.toLowerCase().includes(q)))
-  })
+
+  // Show the "Find a photo" tab only if Unsplash is configured
+  try {
+    const st = await (await fetch('/api/images/status')).json()
+    document.getElementById('asset-tab-search').style.display = st.configured ? '' : 'none'
+  } catch { document.getElementById('asset-tab-search').style.display = 'none' }
 }
 
 function renderAssetPanelGrid(assets) {
@@ -705,14 +723,21 @@ function renderAssetPanelGrid(assets) {
     cell.innerHTML = isImage
       ? `<img src="${asset.bucket_url}" alt="${asset.filename}" loading="lazy"><span class="asset-filename">${asset.filename}</span>`
       : `<div class="file-icon">📄</div><span class="asset-filename">${asset.filename}</span>`
-    cell.addEventListener('click', () => {
-      document.getElementById('asset-panel').hidden = true
-      if (assetPickerCallback) assetPickerCallback(asset)
-      assetPickerCallback = null
-    })
+    cell.addEventListener('click', () => selectAsset(asset))
     grid.appendChild(cell)
   }
 }
+
+// Tab switching
+document.querySelectorAll('.asset-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchAssetTab(btn.dataset.assetTab))
+})
+
+// Library filter
+document.getElementById('asset-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase()
+  renderAssetPanelGrid(currentAssets.filter(a => a.filename.toLowerCase().includes(q)))
+})
 
 document.querySelectorAll('.panel-close').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -731,14 +756,59 @@ document.getElementById('asset-panel-file-input').addEventListener('change', asy
   if (!file) return
   const form = new FormData(); form.append('file', file)
   const res = await fetch('/api/assets', { method: 'POST', body: form })
-  if (res.ok) {
-    const asset = await res.json()
-    if (assetPickerCallback) {
-      document.getElementById('asset-panel').hidden = true
-      assetPickerCallback(asset)
-      assetPickerCallback = null
-    }
+  if (res.ok) selectAsset(await res.json())
+})
+
+// ─── AI image search (Unsplash) ───────────────────────────────────────────────
+
+async function runImageSearch() {
+  const q = document.getElementById('image-search-input').value.trim()
+  if (!q) return
+  const status = document.getElementById('image-search-status')
+  const grid = document.getElementById('image-search-grid')
+  status.textContent = 'Searching…'; status.hidden = false
+  grid.innerHTML = ''
+  try {
+    const res = await fetch('/api/images/search?q=' + encodeURIComponent(q))
+    if (!res.ok) { status.textContent = 'Search failed. Check your Unsplash key.'; return }
+    const { results } = await res.json()
+    if (!results.length) { status.textContent = 'No photos found — try different words.'; return }
+    status.hidden = true
+    renderImageSearchGrid(results)
+  } catch {
+    status.textContent = 'Search failed.'
   }
+}
+
+function renderImageSearchGrid(results) {
+  const grid = document.getElementById('image-search-grid')
+  grid.innerHTML = ''
+  for (const r of results) {
+    const cell = document.createElement('div')
+    cell.className = 'asset-cell asset-cell-selectable'
+    cell.innerHTML = `<img src="${r.thumbUrl}" alt="${escAttr(r.description)}" loading="lazy"><span class="asset-filename">© ${escHtml(r.creditName)}</span>`
+    cell.addEventListener('click', async () => {
+      const status = document.getElementById('image-search-status')
+      status.textContent = 'Adding photo to your media…'; status.hidden = false
+      try {
+        const res = await fetch('/api/images/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(r),
+        })
+        if (!res.ok) { status.textContent = 'Could not add that photo.'; return }
+        selectAsset(await res.json())
+      } catch {
+        status.textContent = 'Could not add that photo.'
+      }
+    })
+    grid.appendChild(cell)
+  }
+}
+
+document.getElementById('image-search-btn').addEventListener('click', runImageSearch)
+document.getElementById('image-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); runImageSearch() }
 })
 
 // ─── Form field editor ────────────────────────────────────────────────────────

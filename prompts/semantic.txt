@@ -67,6 +67,7 @@ Images:
 - If the image is decorative (no caption, no context suggesting informational purpose), use alt=""
 - Apply the flow class from the class vocabulary based on the block's flow meta value
 - On mobile, all flow-left and flow-right images become flow-full regardless of the desktop intent — express this using data-flow on the element; CSS handles the responsive behaviour
+- ATTRIBUTION (required): if an asset in the ASSET_MAP has a `credit` field, you MUST render that credit visibly inside the figure, in a <figcaption> (append to any existing caption on its own line). Wrap it in <span class="image-credit">. The credit text is like "Photo by Annie Spratt on Unsplash" — link the photographer's name to the asset's creditUrl, and link the word "Unsplash" to https://unsplash.com. This attribution is a licensing requirement and must never be omitted for credited assets.
 
 Galleries:
 - Render as <figure class="gallery-grid" data-cols-desktop="N" data-cols-tablet="N" data-cols-mobile="N"> containing a list of <figure> elements
