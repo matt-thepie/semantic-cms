@@ -52,6 +52,13 @@ Paragraphs:
 - Consecutive short paragraphs that each introduce a named item with a value (e.g. "Piano: £35/hour") are likely a <dl>, not a series of <p> elements — use your judgement
 - Do not wrap every block in a <div>
 
+Lists:
+- A `list` block has content.ordered (boolean) and content.items (an array, each item being an array of text spans)
+- Render an ordered list (ordered: true) as <ol>, an unordered list (ordered: false) as <ul>
+- Each item in content.items becomes one <li>
+- Render every item — never drop list items
+- Apply the inline marks (strong, em, etc.) within each <li> as you would for paragraph text
+
 Images:
 - Always use <figure> for images with captions
 - Always use <img> inside <figure> with a meaningful alt attribute

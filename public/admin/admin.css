@@ -626,7 +626,10 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 
 /* ─── Image / file editors ─────────────────────────────────────────────────── */
 
-.image-editor, .file-editor, .gallery-editor, .resource-list-editor { display: flex; flex-direction: column; gap: .75rem }
+.image-editor, .file-editor, .gallery-editor, .resource-list-editor, .list-editor { display: flex; flex-direction: column; gap: .5rem }
+.list-items-input { width: 100%; resize: vertical; font-family: var(--font); line-height: 1.6 }
+.preview-list { margin: 0; padding-left: 1.25rem }
+.preview-list li { margin: 0 }
 
 .gallery-item-row, .resource-item-row {
   display: grid;

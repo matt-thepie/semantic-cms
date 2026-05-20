@@ -141,6 +141,11 @@ function blockPreview(block) {
       return `<h${block.content.level} class="preview-heading">${spansToHtml(block.content.text)}</h${block.content.level}>`
     case 'paragraph':
       return `<p>${spansToHtml(block.content.text)}</p>`
+    case 'list': {
+      const tag = block.content.ordered ? 'ol' : 'ul'
+      const items = (block.content.items || []).map(item => `<li>${spansToHtml(item)}</li>`).join('')
+      return `<${tag} class="preview-list">${items}</${tag}>`
+    }
     case 'image':
       return `<div class="preview-image-row">
         <div class="preview-image-thumb">${block.content.asset ? '🖼' : '[ no image ]'}</div>
@@ -274,6 +279,7 @@ function defaultBlock(type) {
   switch (type) {
     case 'heading':      return { id, type, content: { level: 2, text: [{ text: '' }] }, meta: {} }
     case 'paragraph':    return { id, type, content: { text: [{ text: '' }] }, meta: {} }
+    case 'list':         return { id, type, content: { ordered: false, items: [[{ text: '' }]] }, meta: {} }
     case 'image':        return { id, type, content: { asset: null }, meta: { flow: 'full' } }
     case 'gallery':      return { id, type, content: { items: [] }, meta: { layout: 'grid', columns: { desktop: 3, tablet: 2, mobile: 1 } } }
     case 'divider':      return { id, type, content: {}, meta: {} }
@@ -313,6 +319,38 @@ function moveBlock(index, direction) {
   pushUndo();
   [blocks[index], blocks[target]] = [blocks[target], blocks[index]]
   renderBlocks()
+}
+
+// Transform a block to another type, preserving its id and text
+function transformBlock(index, toType) {
+  const block = blocks[index]
+  if (!block || block.type === toType) return
+  pushUndo()
+
+  // Extract text spans from the source block (paragraph/heading have content.text,
+  // list items get joined)
+  let spans
+  if (block.type === 'list') {
+    spans = (block.content.items || []).flatMap((item, i) =>
+      i === 0 ? item : [{ text: ' ' }, ...item])
+  } else {
+    spans = block.content?.text || [{ text: '' }]
+  }
+
+  if (toType === 'heading') {
+    block.type = 'heading'
+    block.content = { level: 2, text: spans }
+  } else if (toType === 'paragraph') {
+    block.type = 'paragraph'
+    block.content = { text: spans }
+  } else if (toType === 'list') {
+    block.type = 'list'
+    block.content = { ordered: false, items: [spans] }
+    block.meta = {}
+  }
+
+  renderBlocks()
+  activateBlock(index)
 }
 
 // ─── Active block editor ──────────────────────────────────────────────────────
@@ -363,6 +401,20 @@ function buildBlockEditor(block, index) {
     })
   })
 
+  // Transform buttons (paragraph ↔ heading ↔ list)
+  div.querySelectorAll('[data-transform]').forEach(btn => {
+    btn.addEventListener('click', () => transformBlock(index, btn.dataset.transform))
+  })
+
+  // List style buttons (bullet / numbered)
+  div.querySelectorAll('[data-list-style]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pushUndo()
+      block.content.ordered = btn.dataset.listStyle === 'number'
+      activateBlock(index)
+    })
+  })
+
   return div
 }
 
@@ -374,15 +426,23 @@ function buildToolbar(block, index) {
   let specific = ''
   switch (block.type) {
     case 'paragraph':
-      specific = `<button class="toolbar-btn" data-fmt="strong" title="Bold">B</button>
-        <button class="toolbar-btn" data-fmt="em" title="Italic">I</button>
-        <button class="toolbar-btn" data-fmt="u" title="Underline">U</button>
+      specific = `<button class="toolbar-btn" data-transform="heading" title="Convert to heading">↕ Heading</button>
+        <button class="toolbar-btn" data-transform="list" title="Convert to list">↕ List</button>
         <span class="toolbar-sep"></span>`
       break
     case 'heading':
       specific = `<button class="toolbar-btn ${block.content.level===1?'active':''}" data-level="1">H1</button>
         <button class="toolbar-btn ${block.content.level===2?'active':''}" data-level="2">H2</button>
         <button class="toolbar-btn ${block.content.level===3?'active':''}" data-level="3">H3</button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" data-transform="paragraph" title="Convert to text">↕ Text</button>
+        <span class="toolbar-sep"></span>`
+      break
+    case 'list':
+      specific = `<button class="toolbar-btn ${!block.content.ordered?'active':''}" data-list-style="bullet" title="Bulleted">• List</button>
+        <button class="toolbar-btn ${block.content.ordered?'active':''}" data-list-style="number" title="Numbered">1. List</button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" data-transform="paragraph" title="Convert to text">↕ Text</button>
         <span class="toolbar-sep"></span>`
       break
     case 'image':
@@ -421,6 +481,33 @@ function buildEditorBody(block, index) {
 
       div.appendChild(ta)
       setTimeout(() => { ta.focus(); placeCursorAtEnd(ta) }, 0)
+      break
+    }
+
+    case 'list': {
+      const itemsText = (block.content.items || []).map(item => spansToPlain(item)).join('\n')
+      div.innerHTML = `
+        <div class="list-editor">
+          <p class="muted">One item per line</p>
+          <textarea class="list-items-input" rows="${Math.max(3, (block.content.items || []).length)}"></textarea>
+        </div>
+      `
+      const ta = div.querySelector('.list-items-input')
+      ta.value = itemsText
+      const sync = () => {
+        const lines = ta.value.split('\n')
+        block.content.items = lines.length ? lines.map(l => [{ text: l }]) : [[{ text: '' }]]
+      }
+      ta.addEventListener('input', () => {
+        sync()
+        const preview = ta.closest('.block-wrapper')?.querySelector('.block-preview')
+        if (preview) preview.innerHTML = blockPreview(block)
+      })
+      ta.addEventListener('blur', () => {
+        const lines = ta.value.split('\n').map(l => l.trim()).filter(l => l.length)
+        block.content.items = lines.length ? lines.map(l => [{ text: l }]) : [[{ text: '' }]]
+      })
+      setTimeout(() => ta.focus(), 0)
       break
     }
 
