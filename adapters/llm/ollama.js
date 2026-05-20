@@ -1,7 +1,7 @@
 import config from '../../config.js'
 
 export default {
-  async complete(systemPrompt, userContent) {
+  async complete(systemPrompt, userContent, _opts = {}) {
     const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

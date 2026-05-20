@@ -619,6 +619,12 @@ router.post('/css/design', requireAdmin, async (req, res) => {
     let updatedCss = await designPass({ brief, currentCss, allPageHtml, imageUrls })
 
     send({ phase: 'Checking nothing got broken…' })
+    // Guard against malformed/incomplete CSS — never write a broken stylesheet
+    const opens = (updatedCss.match(/\{/g) || []).length
+    const closes = (updatedCss.match(/\}/g) || []).length
+    if (!updatedCss.trim() || opens !== closes) {
+      throw new Error('The design came back incomplete. Please try again.')
+    }
     updatedCss = preserveStructuralRules(currentCss, updatedCss)
     // Drop any external image URL the LLM invented outside our tracked set
     updatedCss = stripUntrackedImageUrls(updatedCss, imageUrls)

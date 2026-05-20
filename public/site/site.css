@@ -366,21 +366,6 @@ figcaption { font-size: .875rem; color: var(--color-muted); margin-top: .5rem; f
 .download-item::before { content: '↓'; font-weight: 700 }
 .download-filename { color: var(--color-muted); font-size: .8rem; margin-left: auto }
 
-/* ─── Contact form ─────────────────────────────────────────────────────────── */
-
-.contact-form { max-width: 520px; margin: 1.5rem 0 }
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: .375rem;
-  margin-bottom: 1.1rem;
-}
-
-.form-field label {
-  font-family: var(--font-ui);
-  font-size: .875rem;
-  font-weight: 600;
-}
-
-.form-field input,
+/* Contact form, footer, password gate and other content components are styled
+   in base.css (loaded first) so they always look good. Add theme overrides
+   here only if a design change needs them. */

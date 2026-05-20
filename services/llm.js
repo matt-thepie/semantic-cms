@@ -201,7 +201,9 @@ ${currentCss}
 PAGE HTML (for context — do not change this):
 ${allPageHtml.map((h, i) => `--- Page ${i + 1} ---\n${h}`).join('\n\n')}`
 
-  return stripFences(await adapter.complete(prompt, context))
+  // Whole-stylesheet output can be large — allow plenty of room so it isn't
+  // cut off mid-rule (which would write broken CSS).
+  return stripFences(await adapter.complete(prompt, context, { maxTokens: 16000 }))
 }
 
 export async function cssAudit({ currentCss, allPageHtml, colorProperties }) {
@@ -220,5 +222,5 @@ ${currentCss}
 ALL_PAGE_HTML:
 ${htmlFragments}`
 
-  return stripFences(await adapter.complete(prompt, context))
+  return stripFences(await adapter.complete(prompt, context, { maxTokens: 16000 }))
 }

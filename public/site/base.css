@@ -1,0 +1,168 @@
+/* base.css — polished default styling for the content components the LLM
+   renders (forms, downloads, galleries, figures, footer, etc.).
+   Loaded BEFORE site.css so the theme can still override colours/fonts, but
+   these defaults always look good and can never be lost to a design-pass
+   truncation. Colours come from the theme's custom properties (with fallbacks). */
+
+/* ─── Figures & images ─────────────────────────────────────────────────────── */
+
+figure { margin: 1.5rem 0; display: flow-root }
+figure img { border-radius: 6px }
+figcaption {
+  font-size: .875rem;
+  color: var(--color-muted, #6b6762);
+  margin-top: .5rem;
+  font-family: var(--font-ui, sans-serif);
+}
+.image-credit { display: block; font-size: .72rem; opacity: .7; margin-top: .25rem }
+.image-credit a { color: inherit }
+
+.flow-full { width: 100% }
+.flow-center { max-width: 480px; margin-left: auto; margin-right: auto }
+.flow-left, .flow-right { width: 100% }
+@media (min-width: 640px) {
+  .flow-left  { float: left;  width: 45%; margin: .25rem 1.5rem .75rem 0 }
+  .flow-right { float: right; width: 45%; margin: .25rem 0 .75rem 1.5rem }
+}
+
+/* ─── Galleries ────────────────────────────────────────────────────────────── */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 1), 1fr);
+  gap: .75rem;
+  margin: 1.5rem 0;
+}
+.gallery-grid[data-cols-mobile="2"] { --cols: 2 }
+@media (min-width: 640px) {
+  .gallery-grid[data-cols-tablet="2"] { --cols: 2 }
+  .gallery-grid[data-cols-tablet="3"] { --cols: 3 }
+}
+@media (min-width: 1024px) {
+  .gallery-grid[data-cols-desktop="2"] { --cols: 2 }
+  .gallery-grid[data-cols-desktop="3"] { --cols: 3 }
+  .gallery-grid[data-cols-desktop="4"] { --cols: 4 }
+}
+.gallery-grid figure { margin: 0 }
+.gallery-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px }
+.gallery-strip { display: flex; gap: .75rem; overflow-x: auto; margin: 1.5rem 0; padding-bottom: .5rem }
+.gallery-strip figure { flex: 0 0 280px; margin: 0 }
+.gallery-strip img { width: 280px; height: 200px; object-fit: cover; border-radius: 6px }
+
+/* ─── Downloads ────────────────────────────────────────────────────────────── */
+
+.download-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .5rem; margin: 1rem 0 }
+.download-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .8rem 1rem;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e0ddd8);
+  border-radius: 8px;
+  color: var(--color-accent, #2d5a3d);
+  text-decoration: none;
+  font-family: var(--font-ui, sans-serif);
+  font-size: .9rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.download-item:hover { border-color: var(--color-accent, #2d5a3d); box-shadow: 0 2px 8px rgba(0,0,0,.06) }
+.download-item::before { content: '↓'; font-weight: 700 }
+.download-filename { color: var(--color-muted, #6b6762); font-size: .8rem; margin-left: auto }
+
+/* ─── Contact form (polished default) ──────────────────────────────────────── */
+
+.contact-form {
+  max-width: 540px;
+  margin: 1.75rem 0;
+  padding: 1.75rem;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e0ddd8);
+  border-radius: 12px;
+  box-shadow: 0 2px 14px rgba(0,0,0,.05);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-bottom: 1.15rem;
+}
+.form-field label {
+  font-family: var(--font-ui, sans-serif);
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--color-text, #1a1a1a);
+}
+.form-field input,
+.form-field textarea,
+.form-field select {
+  font-family: var(--font-body, sans-serif);
+  font-size: 1rem;
+  padding: .7rem .85rem;
+  border: 1.5px solid var(--color-border, #e0ddd8);
+  border-radius: 8px;
+  background: var(--color-bg, #faf9f7);
+  color: var(--color-text, #1a1a1a);
+  width: 100%;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.form-field input::placeholder,
+.form-field textarea::placeholder { color: var(--color-muted, #9b968f) }
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  background: var(--color-surface, #fff);
+  border-color: var(--color-accent, #2d5a3d);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #2d5a3d) 18%, transparent);
+}
+.form-field textarea { resize: vertical; min-height: 7.5rem }
+
+.form-submit {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: .8rem 2rem;
+  background: var(--color-accent, #2d5a3d);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter .15s, transform .05s;
+}
+.form-submit:hover { filter: brightness(1.08) }
+.form-submit:active { transform: translateY(1px) }
+.form-submit:disabled { opacity: .5; cursor: not-allowed }
+
+.contact-success {
+  color: var(--color-accent, #2d5a3d);
+  font-family: var(--font-ui, sans-serif);
+  font-weight: 600;
+}
+.contact-error { color: #c0392b; font-family: var(--font-ui, sans-serif); font-size: .875rem; margin-top: .5rem }
+
+/* ─── Password gate ────────────────────────────────────────────────────────── */
+
+.password-gate { max-width: 360px; margin: 4rem auto; font-family: var(--font-ui, sans-serif) }
+.password-gate h1 { font-size: 1.5rem; margin-bottom: .75rem }
+.password-gate p { color: var(--color-muted, #6b6762); margin-bottom: 1.5rem }
+.unlock-error { color: #c0392b; font-size: .875rem; margin-top: .5rem }
+
+/* ─── Footer ───────────────────────────────────────────────────────────────── */
+
+.site-footer {
+  text-align: center;
+  padding: 2.5rem var(--gap, 1.5rem);
+  color: var(--color-muted, #6b6762);
+  font-family: var(--font-ui, sans-serif);
+  font-size: .8rem;
+  border-top: 1px solid var(--color-border, #e0ddd8);
+  margin-top: 4rem;
+}
+.site-footer-credits { font-size: .72rem; opacity: .7; margin-top: .35rem }
+.site-footer-credits a { color: inherit }
+
+/* ─── Page sections ────────────────────────────────────────────────────────── */
+
+.page-section { margin-bottom: 2.5rem }
