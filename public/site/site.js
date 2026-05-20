@@ -203,6 +203,8 @@ function updateAdminBarEditLink() {
 }
 
 async function setupAdminBar() {
+  // Never show the bar inside the editor's preview iframe.
+  if (window.self !== window.top) return
   let status
   try { status = await (await fetch('/api/auth/status')).json() } catch { return }
   if (!status || !status.authenticated) return

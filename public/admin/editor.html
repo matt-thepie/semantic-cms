@@ -18,12 +18,26 @@
     </div>
     <h1 id="page-title-display" class="editor-page-title" contenteditable="true" spellcheck="false"></h1>
     <div class="editor-header-right">
+      <button id="preview-btn" class="btn btn-ghost" aria-pressed="false">Preview</button>
       <button id="history-btn" class="btn btn-ghost">History</button>
       <button id="save-btn" class="btn btn-primary">Save</button>
     </div>
   </header>
 
   <div id="save-status" class="save-status" hidden></div>
+
+  <!-- Live page preview (toggled by the Preview button) -->
+  <aside id="preview-panel" class="preview-panel" hidden>
+    <div class="preview-panel-bar">
+      <span class="preview-panel-title">Live preview <span class="muted">— updates when you save</span></span>
+      <span class="preview-panel-actions">
+        <button id="preview-refresh" class="btn-icon" title="Refresh preview">⟳</button>
+        <a id="preview-open" class="btn-icon" href="#" target="_blank" rel="noopener" title="Open in new tab">↗</a>
+        <button id="preview-close" class="btn-icon" title="Close preview">✕</button>
+      </span>
+    </div>
+    <iframe id="preview-frame" class="preview-frame" title="Live page preview"></iframe>
+  </aside>
 
   <main class="editor-main">
     <section class="layout-ask">

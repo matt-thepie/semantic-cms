@@ -9,6 +9,7 @@ let undoStack = []
 let redoStack = []
 let currentHtml = ''
 let dirty = false
+let pageSlug = null
 let assetPickerCallback = null
 let assetUrls = {}   // asset id → url, for showing thumbnails
 let assetNames = {}  // asset id → original filename, for showing file names
@@ -122,6 +123,7 @@ async function loadPage() {
   if (!res.ok) { alert('Page not found'); window.location.href = '/admin/'; return }
 
   const page = await res.json()
+  pageSlug = page.slug
   document.title = `${page.title} — Editor`
   document.getElementById('page-title-display').textContent = page.title
   document.getElementById('page-purpose').value = page.purpose || ''
@@ -1226,15 +1228,7 @@ async function save() {
   let ok = false
 
   try {
-    // Sync page title and purpose
-    const titleEl = document.getElementById('page-title-display')
-    const purposeEl = document.getElementById('page-purpose')
-    if (titleEl.textContent) {
-      await api('PUT', `/pages/${pageId}`, {
-        title: titleEl.textContent,
-        purpose: purposeEl.value,
-      })
-    }
+    await syncTitleAndPurpose()
 
     const res = await api('POST', `/pages/${pageId}/save`, { block_json: blocks })
     if (res.ok) {
@@ -1256,8 +1250,50 @@ async function save() {
     document.getElementById('save-overlay').hidden = true
     // Clean state if saved; stay dirty (button re-enabled) if it failed.
     setDirty(!ok)
+    if (ok) refreshPreview()
   }
 }
+
+async function syncTitleAndPurpose() {
+  const titleEl = document.getElementById('page-title-display')
+  const purposeEl = document.getElementById('page-purpose')
+  if (titleEl.textContent) {
+    await api('PUT', `/pages/${pageId}`, {
+      title: titleEl.textContent,
+      purpose: purposeEl.value,
+    })
+  }
+}
+
+// ─── Live preview pane ──────────────────────────────────────────────────────────
+
+function livePath() { return '/' + (pageSlug && pageSlug !== 'home' ? pageSlug : '') }
+
+function refreshPreview() {
+  const panel = document.getElementById('preview-panel')
+  if (panel.hidden) return
+  document.getElementById('preview-frame').src = livePath() + '?preview=1&_=' + Date.now()
+}
+
+function openPreview() {
+  document.getElementById('preview-open').href = livePath()
+  document.getElementById('preview-panel').hidden = false
+  document.body.classList.add('preview-open')
+  document.getElementById('preview-btn').setAttribute('aria-pressed', 'true')
+  refreshPreview()
+}
+
+function closePreview() {
+  document.getElementById('preview-panel').hidden = true
+  document.body.classList.remove('preview-open')
+  document.getElementById('preview-btn').setAttribute('aria-pressed', 'false')
+}
+
+document.getElementById('preview-btn').addEventListener('click', () => {
+  document.getElementById('preview-panel').hidden ? openPreview() : closePreview()
+})
+document.getElementById('preview-refresh').addEventListener('click', refreshPreview)
+document.getElementById('preview-close').addEventListener('click', closePreview)
 
 function showSaveStatus(msg, isError = false) {
   const el = document.getElementById('save-status')
@@ -1295,6 +1331,9 @@ async function submitLayoutChange() {
     result.hidden = false
 
     document.getElementById('help-apply').onclick = async () => {
+      const applyBtn = document.getElementById('help-apply')
+      applyBtn.disabled = true
+      applyBtn.textContent = 'Saving…'
       // Persist the adjusted HTML directly — do NOT re-run the semantic pass
       // (that would discard the adjustment).
       const saveRes = await api('POST', `/pages/${pageId}/apply-html`, {
@@ -1302,11 +1341,19 @@ async function submitLayoutChange() {
         rendered_html: adjusted_html,
       })
       if (saveRes.ok) {
+        // Persist any title/purpose edits too, so the whole page is saved.
+        await syncTitleAndPurpose()
         currentHtml = adjusted_html
+        setDirty(false)
         document.getElementById('help-result').hidden = true
         document.getElementById('help-input').value = ''
-        showSaveStatus('Layout updated. Refresh the public page to see it.')
+        showSaveStatus('Layout updated and saved.')
+        refreshPreview()
+      } else {
+        showSaveStatus('Could not save the layout change.', true)
       }
+      applyBtn.disabled = false
+      applyBtn.textContent = 'Use this'
     }
 
     document.getElementById('help-retry').onclick = () => {
