@@ -2,5 +2,9 @@ node_modules/
 data/
 .env
 public/uploads/
+
+# AI-generated theme — written at runtime by the design tool, per-site.
+# base.css and nav.css ARE tracked (shipped defaults); site.css is not.
+public/site/site.css
 *.log
 .DS_Store

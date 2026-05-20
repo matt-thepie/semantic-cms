@@ -1,0 +1,63 @@
+name: Deploy
+
+# Deploys to beta.alicedennis.net. Runs on every push to main, and can be
+# triggered manually from the Actions tab ("Run workflow").
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Only reinstall dependencies when they actually change — native modules
+      # (better-sqlite3, sharp) are slow to rebuild.
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            deps:
+              - 'package.json'
+              - 'package-lock.json'
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DEPS: ${{ steps.changes.outputs.deps }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          envs: DEPLOY_DEPS
+          script: |
+            set -e
+            source ~/.nvm/nvm.sh
+            cd ~/github/semantic-cms
+
+            # Preserve the live, AI-generated theme (untracked) across the reset.
+            [ -f public/site/site.css ] && cp public/site/site.css /tmp/scms-site.css.bak || true
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Restore the live theme if the reset removed it (first transition only).
+            if [ ! -f public/site/site.css ] && [ -f /tmp/scms-site.css.bak ]; then
+              cp /tmp/scms-site.css.bak public/site/site.css
+            fi
+
+            # Reinstall deps only when package files changed (or on manual run).
+            if [ "$DEPLOY_DEPS" != "false" ]; then
+              npm ci
+            fi
+
+            pm2 restart semantic-cms --update-env
+            pm2 save

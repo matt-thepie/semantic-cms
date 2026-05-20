@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in — Semantic CMS</title>
+  <title>Sign in</title>
   <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body class="login-page">
   <main class="login-box">
-    <h1>Semantic CMS</h1>
+    <div class="login-mark" id="login-mark" aria-hidden="true">♪</div>
+    <h1 id="login-title">Your website</h1>
+    <p class="login-subtitle">Sign in to edit your pages</p>
 
     <p id="login-error" class="error-message" hidden></p>
 
@@ -28,10 +30,23 @@
       </div>
       <button type="submit" class="btn btn-ghost">Sign in with password</button>
     </form>
+
+    <p class="login-foot">Only approved accounts can sign in.</p>
   </main>
 
   <script type="module">
     const error = document.getElementById('login-error')
+
+    // Brand the page with the real site name (falls back gracefully)
+    try {
+      const meta = await (await fetch('/api/site-meta')).json()
+      if (meta.site_name) {
+        document.getElementById('login-title').textContent = meta.site_name
+        document.title = 'Sign in — ' + meta.site_name
+        const initial = meta.site_name.trim()[0]
+        if (initial) document.getElementById('login-mark').textContent = initial.toUpperCase()
+      }
+    } catch {}
 
     // Show an error if Google sign-in bounced us back
     const params = new URLSearchParams(location.search)
