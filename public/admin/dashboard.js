@@ -234,34 +234,96 @@ document.getElementById('test-smtp-btn').addEventListener('click', async () => {
   setTimeout(() => { msg.hidden = true }, 4000)
 })
 
-// ─── Design ───────────────────────────────────────────────────────────────────
+// ─── Design (streamed progress + preview + confirm) ────────────────────────────
+
+const designOverlay = document.getElementById('design-overlay')
+
+function showDesignState(state) {
+  document.getElementById('design-working').hidden = state !== 'working'
+  document.getElementById('design-preview').hidden = state !== 'preview'
+  document.getElementById('design-error').hidden = state !== 'error'
+}
+
+function closeDesignOverlay() {
+  designOverlay.hidden = true
+}
 
 document.getElementById('design-btn').addEventListener('click', async () => {
   const brief = document.getElementById('design-brief').value.trim()
   if (!brief) return
 
-  const btn = document.getElementById('design-btn')
-  const msg = document.getElementById('design-msg')
-  btn.disabled = true
-  btn.textContent = 'Working…'
-  msg.hidden = true
+  showDesignState('working')
+  document.getElementById('design-phase').textContent = 'Starting…'
+  designOverlay.hidden = false
 
-  const res = await api('POST', '/css/design', { brief })
+  let candidateCss = null
 
-  if (res.ok) {
-    const { updated_css } = await res.json()
-    await api('PUT', '/css', { css: updated_css })
-    msg.textContent = 'Design updated. Refresh the public site to see the changes.'
-    msg.hidden = false
-  } else {
-    msg.textContent = 'Something went wrong. Try again.'
-    msg.hidden = false
+  try {
+    const res = await fetch('/api/css/design', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brief }),
+    })
+    if (res.status === 401) { window.location.href = '/admin/login'; return }
+    if (!res.ok || !res.body) throw new Error('Design request failed')
+
+    // Read the newline-delimited JSON progress stream
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let nl
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).trim()
+        buffer = buffer.slice(nl + 1)
+        if (!line) continue
+        const evt = JSON.parse(line)
+        if (evt.phase) {
+          document.getElementById('design-phase').textContent = evt.phase
+        } else if (evt.error) {
+          throw new Error(evt.error)
+        } else if (evt.done) {
+          candidateCss = evt.updated_css
+        }
+      }
+    }
+
+    if (!candidateCss) throw new Error('No design was produced')
+
+    // Show a live preview of the home page with the candidate CSS
+    showDesignState('preview')
+    const frame = document.getElementById('design-preview-frame')
+    frame.onload = () => {
+      try {
+        const doc = frame.contentDocument
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(l => l.remove())
+        const style = doc.createElement('style')
+        style.textContent = candidateCss
+        doc.head.appendChild(style)
+      } catch {}
+    }
+    frame.src = '/?_preview=' + Date.now()
+
+    document.getElementById('design-apply').onclick = async () => {
+      await api('PUT', '/css', { css: candidateCss })
+      closeDesignOverlay()
+      const msg = document.getElementById('design-msg')
+      msg.textContent = 'Design applied. Refresh the public site to see it live.'
+      msg.hidden = false
+      setTimeout(() => { msg.hidden = true }, 6000)
+    }
+    document.getElementById('design-discard').onclick = closeDesignOverlay
+
+  } catch (err) {
+    showDesignState('error')
+    document.getElementById('design-error-msg').textContent = err.message || 'Something went wrong. Try again.'
   }
-
-  btn.disabled = false
-  btn.textContent = 'Apply design'
-  setTimeout(() => { msg.hidden = true }, 6000)
 })
+
+document.getElementById('design-error-close').addEventListener('click', closeDesignOverlay)
 
 // ─── Tidy CSS ─────────────────────────────────────────────────────────────────
 

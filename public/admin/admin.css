@@ -301,6 +301,66 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 .design-zone h3 { font-size: .95rem; margin-bottom: .375rem }
 .design-zone textarea { width: 100%; resize: vertical }
 
+/* ─── Design overlay ───────────────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 1.5rem;
+}
+
+.overlay-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+.overlay-card h2 { font-size: 1.15rem; margin-bottom: .5rem }
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1.25rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+.design-phase {
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: .5rem;
+  min-height: 1.4em;
+  transition: opacity .15s;
+}
+
+.preview-frame-wrap {
+  margin: 1.25rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+}
+#design-preview-frame {
+  width: 100%;
+  height: 60vh;
+  border: none;
+  display: block;
+}
+.overlay-card .dialog-actions { justify-content: center }
+
 .danger-zone {
   margin-top: 2rem;
   padding-top: 1.5rem;

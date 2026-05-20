@@ -11,12 +11,15 @@
   --color-key-black: #1a1a1a;
   --color-header-bg: #1a1a2e;
   --color-header-text: #f5f5f0;
+  --color-header-overlay: rgba(10, 10, 20, 0.62);
 
   --font-body: Georgia, 'Times New Roman', serif;
   --font-ui:   'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
 
   --content-w: 720px;
   --gap:       1.5rem;
+
+  --header-hero-min-h: 220px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,6 +32,7 @@
     --color-muted:   #999390;
     --color-header-bg: #0d0d14;
     --color-header-text: #f0ede8;
+    --color-header-overlay: rgba(5, 5, 15, 0.70);
   }
 }
 
@@ -50,9 +54,19 @@ a { color: var(--color-accent) }
 /* ─── Site header ──────────────────────────────────────────────────────────── */
 
 .site-header {
-  background: var(--color-header-bg);
+  background-color: var(--color-header-bg);
+  background-image:
+    linear-gradient(var(--color-header-overlay), var(--color-header-overlay)),
+    url('https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1400&q=80');
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
   border-bottom: 4px solid var(--color-key-black);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  min-height: var(--header-hero-min-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .site-header > div,
@@ -64,25 +78,27 @@ a { color: var(--color-accent) }
 
 .site-header-bar {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: .75rem 0;
-  gap: 1rem;
+  justify-content: center;
+  padding: 1.25rem var(--gap) .75rem;
+  gap: .75rem;
   max-width: var(--content-w);
   margin: 0 auto;
-  padding-left: var(--gap);
-  padding-right: var(--gap);
+  text-align: center;
 }
 
 .site-logo {
   font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   color: var(--color-header-text);
   text-decoration: none;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
   flex-shrink: 0;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+  display: inline-block;
 }
 
 .site-logo::before {
@@ -125,17 +141,22 @@ a { color: var(--color-accent) }
   font-family: var(--font-ui);
   font-size: 1rem;
   padding: .75rem var(--gap) 1rem;
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.18);
   max-width: var(--content-w);
   margin: 0 auto;
+  width: 100%;
+  align-items: center;
 }
 .site-nav.open { display: flex }
 .site-nav a {
   color: var(--color-header-text);
   text-decoration: none;
   padding: .65rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  opacity: 0.85;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  opacity: 0.9;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  width: 100%;
+  text-align: center;
 }
 .site-nav a:last-child { border-bottom: none }
 .site-nav a:hover, .site-nav a.active {
@@ -145,25 +166,24 @@ a { color: var(--color-accent) }
 
 /* Tablet+ : horizontal nav, no hamburger */
 @media (min-width: 640px) {
-  .site-header-bar {
-    padding: .75rem var(--gap);
-    max-width: none;
-    margin: 0;
-  }
-
-  .site-header {
-    display: block;
-  }
-
-  .site-header > * {
-    max-width: var(--content-w);
-    margin-left: auto;
-    margin-right: auto;
+  :root {
+    --header-hero-min-h: 260px;
   }
 
   .site-header-bar {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem var(--gap) .75rem;
     max-width: var(--content-w);
     margin: 0 auto;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .site-logo {
+    font-size: 1.55rem;
+    letter-spacing: 0.06em;
   }
 
   .nav-toggle { display: none }
@@ -173,38 +193,35 @@ a { color: var(--color-accent) }
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
+    justify-content: center;
     gap: 0;
     font-size: .9rem;
-    padding: 0;
+    padding: 0 0 1rem;
     border-top: none;
-    max-width: none;
-    margin: 0;
+    max-width: var(--content-w);
+    margin: 0 auto;
+    width: 100%;
   }
 
   .site-nav a {
-    color: rgba(245,245,240,0.75);
-    padding: .75rem 1rem;
+    color: rgba(245,245,240,0.82);
+    padding: .6rem 1rem;
     border-bottom: none;
     border-right: none;
     white-space: nowrap;
     letter-spacing: 0.02em;
     transition: color .15s, background .15s;
-    border-radius: 0;
+    border-radius: 4px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.55);
+    text-align: center;
+    width: auto;
   }
 
   .site-nav a:hover,
   .site-nav a.active {
     color: var(--color-key-white);
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.12);
     opacity: 1;
-  }
-
-  .site-header-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: .6rem var(--gap);
-    gap: 2rem;
   }
 }
 
@@ -378,38 +395,3 @@ figcaption { font-size: .875rem; color: var(--color-muted); margin-top: .5rem; f
   transition: border-color .15s;
   width: 100%;
 }
-.form-field input:focus,
-.form-field textarea:focus,
-.form-field select:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
-}
-.form-field textarea { resize: vertical; min-height: 7rem }
-
-.form-submit {
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  font-weight: 600;
-  padding: .7rem 2rem;
-  background: var(--color-accent);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity .15s;
-  letter-spacing: 0.03em;
-}
-.form-submit:hover { opacity: .85 }
-.form-submit:disabled { opacity: .5; cursor: not-allowed }
-
-.contact-success { color: var(--color-accent); font-family: var(--font-ui) }
-.contact-error   { color: #c0392b; font-family: var(--font-ui); font-size: .875rem; margin-top: .5rem }
-
-/* ─── Password gate ────────────────────────────────────────────────────────── */
-
-.password-gate { max-width: 360px; margin: 4rem auto; font-family: var(--font
-/* ─── Image credits (Unsplash attribution) ─────────────────────────────────── */
-
-.site-footer-credits { font-size: .72rem; opacity: .7; margin-top: .35rem }
-.site-footer-credits a { color: inherit }

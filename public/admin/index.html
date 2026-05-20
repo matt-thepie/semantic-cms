@@ -109,11 +109,11 @@
 
       <div class="design-zone">
         <h3>Change the design</h3>
-        <p class="muted">Describe how you'd like the site to look and AI will update the stylesheet.</p>
+        <p class="muted">Describe how you'd like the site to look. You'll get a preview before anything changes.</p>
         <div class="form-field">
           <textarea id="design-brief" rows="3" placeholder="Make the headings a deep forest green. Use a warmer, creamier background. Make the body text slightly larger."></textarea>
         </div>
-        <button id="design-btn" class="btn btn-primary">Apply design</button>
+        <button id="design-btn" class="btn btn-primary">Preview design</button>
         <p id="design-msg" class="status-message" hidden></p>
       </div>
 
@@ -166,6 +166,41 @@
       <button id="tidy-confirm-btn" class="btn btn-primary">Tidy CSS</button>
     </div>
   </dialog>
+
+  <!-- Design progress + preview overlay -->
+  <div id="design-overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <!-- Working state -->
+      <div id="design-working">
+        <div class="spinner"></div>
+        <h2>Designing your site…</h2>
+        <p id="design-phase" class="design-phase">Starting…</p>
+        <p class="muted">This usually takes 20–40 seconds. Hang tight — you'll get a preview to approve.</p>
+      </div>
+
+      <!-- Preview state -->
+      <div id="design-preview" hidden>
+        <h2>Here's the new look</h2>
+        <p class="muted">A preview of your home page with the new design. Apply it, or discard and keep what you have.</p>
+        <div class="preview-frame-wrap">
+          <iframe id="design-preview-frame" title="Design preview"></iframe>
+        </div>
+        <div class="dialog-actions">
+          <button id="design-discard" class="btn btn-ghost">Discard</button>
+          <button id="design-apply" class="btn btn-primary">Apply this design</button>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div id="design-error" hidden>
+        <h2>Something went wrong</h2>
+        <p id="design-error-msg" class="error-message"></p>
+        <div class="dialog-actions">
+          <button id="design-error-close" class="btn btn-ghost">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/admin/dashboard.js"></script>
 </body>

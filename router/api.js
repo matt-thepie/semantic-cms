@@ -540,32 +540,37 @@ function preserveStructuralRules(oldCss, newCss) {
   return `${newCss}\n\n/* Auto-restored structural rules the design pass dropped */\n${unique.join('\n\n')}`
 }
 
+// Streams progress as newline-delimited JSON while it works, then a final
+// { done, updated_css } event. Does NOT apply the CSS — the client previews
+// it and confirms via PUT /api/css.
 router.post('/css/design', requireAdmin, async (req, res) => {
   const { brief } = req.body
   if (!brief?.trim()) return res.status(400).json({ error: 'brief required' })
 
-  const cssPath = path.resolve('./public/site/site.css')
-  const currentCss = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf8') : ''
-
-  const pages = db.prepare(`
-    SELECT pv.rendered_html FROM page_versions pv
-    INNER JOIN (SELECT page_id, MAX(id) AS max_id FROM page_versions GROUP BY page_id) latest
-      ON pv.page_id = latest.page_id AND pv.id = latest.max_id
-    INNER JOIN pages p ON pv.page_id = p.id
-    WHERE p.deleted_at IS NULL AND pv.rendered_html IS NOT NULL
-  `).all()
-
-  const allPageHtml = pages.map(p => p.rendered_html)
+  res.setHeader('Content-Type', 'application/x-ndjson')
+  res.setHeader('Cache-Control', 'no-cache')
+  const send = (obj) => { res.write(JSON.stringify(obj) + '\n') }
 
   try {
-    // If the brief calls for imagery and Unsplash is configured, fetch
-    // hotlinkable background photos (per Unsplash terms we hotlink, never
-    // re-host) and collect their credits for footer attribution.
-    let imageUrls = []
+    send({ phase: 'Reading your site…' })
+    const cssPath = path.resolve('./public/site/site.css')
+    const currentCss = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf8') : ''
+    const pages = db.prepare(`
+      SELECT pv.rendered_html FROM page_versions pv
+      INNER JOIN (SELECT page_id, MAX(id) AS max_id FROM page_versions GROUP BY page_id) latest
+        ON pv.page_id = latest.page_id AND pv.id = latest.max_id
+      INNER JOIN pages p ON pv.page_id = p.id
+      WHERE p.deleted_at IS NULL AND pv.rendered_html IS NOT NULL
+    `).all()
+    const allPageHtml = pages.map(p => p.rendered_html)
+
+    const imageUrls = []
     const credits = []
     if (unsplashConfigured()) {
+      send({ phase: 'Deciding whether your design needs photos…' })
       const queries = await suggestImageQueries(brief)
       for (const q of queries) {
+        send({ phase: `Finding a photo: “${q}”…` })
         try {
           const results = await searchPhotos(q, 1)
           const r = results[0]
@@ -578,17 +583,20 @@ router.post('/css/design', requireAdmin, async (req, res) => {
       }
     }
 
+    send({ phase: 'Writing the new stylesheet… (this is the slow part)' })
     let updatedCss = await designPass({ brief, currentCss, allPageHtml, imageUrls })
-    // Safety net against the LLM dropping structural rules
+
+    send({ phase: 'Checking nothing got broken…' })
     updatedCss = preserveStructuralRules(currentCss, updatedCss)
 
-    // Persist credits so the public footer can attribute background photos
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
       .run('image_credits', JSON.stringify(credits))
 
-    res.json({ updated_css: updatedCss, images_added: imageUrls.length })
+    send({ done: true, updated_css: updatedCss, images_added: imageUrls.length })
+    res.end()
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    send({ error: err.message })
+    res.end()
   }
 })
 
