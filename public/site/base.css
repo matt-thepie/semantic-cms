@@ -4,6 +4,20 @@
    these defaults always look good and can never be lost to a design-pass
    truncation. Colours come from the theme's custom properties (with fallbacks). */
 
+/* ─── Header background photo (set via Settings, not the AI design pass) ─────
+   Applied only when the shell adds [data-has-header-image] to <body>, and uses
+   the --header-bg-image custom property the shell sets inline. The compound
+   selector outranks a theme's plain .site-header rule, so the chosen photo
+   always wins regardless of what the design pass does to site.css. */
+body[data-has-header-image] .site-header {
+  background-image:
+    linear-gradient(var(--color-header-overlay, rgba(20,20,30,.55)), var(--color-header-overlay, rgba(20,20,30,.55))),
+    var(--header-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* ─── Figures & images ─────────────────────────────────────────────────────── */
 
 figure { margin: 1.5rem 0; display: flow-root }

@@ -41,7 +41,7 @@ function showTab(target, { updateHash = true } = {}) {
   if (updateHash) location.hash = target
   if (target === 'assets') loadAssets()
   if (target === 'settings') loadSettings()
-  if (target === 'appearance') loadSettings() // keeps the nav-layout selection in sync
+  if (target === 'appearance') { loadSettings(); loadHeaderPhoto() } // keep nav-layout + header photo in sync
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -270,6 +270,71 @@ document.querySelectorAll('input[name="nav_layout"]').forEach(radio => {
       setTimeout(() => { msg.hidden = true }, 5000)
     }
   })
+})
+
+// ─── Header photo ──────────────────────────────────────────────────────────────
+
+async function loadHeaderPhoto() {
+  try {
+    const meta = await (await fetch('/api/site-meta')).json()
+    const preview = document.getElementById('header-photo-preview')
+    const removeBtn = document.getElementById('header-photo-remove-btn')
+    if (meta.header_image && meta.header_image.url) {
+      preview.className = 'header-photo-preview'
+      preview.style.backgroundImage = `url("${meta.header_image.url}")`
+      preview.textContent = ''
+      removeBtn.hidden = false
+    } else {
+      preview.className = 'header-photo-preview header-photo-empty'
+      preview.style.backgroundImage = ''
+      preview.textContent = 'No header photo'
+      removeBtn.hidden = true
+    }
+  } catch {}
+}
+
+document.getElementById('header-photo-search-btn').addEventListener('click', () => {
+  const panel = document.getElementById('header-photo-search')
+  panel.hidden = !panel.hidden
+  if (!panel.hidden) document.getElementById('header-photo-query').focus()
+})
+
+async function runHeaderPhotoSearch() {
+  const q = document.getElementById('header-photo-query').value.trim()
+  if (!q) return
+  const status = document.getElementById('header-photo-status')
+  const grid = document.getElementById('header-photo-results')
+  status.textContent = 'Searching…'; status.hidden = false; grid.innerHTML = ''
+  const res = await api('GET', '/images/search?q=' + encodeURIComponent(q))
+  if (!res.ok) { status.textContent = 'Search needs an Unsplash key (see Settings).'; return }
+  const { results } = await res.json()
+  if (!results.length) { status.textContent = 'No photos found — try different words.'; return }
+  status.hidden = true
+  grid.innerHTML = ''
+  for (const r of results) {
+    const cell = document.createElement('div')
+    cell.className = 'asset-cell asset-cell-selectable'
+    cell.innerHTML = `<img src="${r.thumbUrl}" alt="" loading="lazy"><span class="asset-filename">© ${r.creditName}</span>`
+    cell.addEventListener('click', async () => {
+      status.textContent = 'Setting header photo…'; status.hidden = false
+      await api('PUT', '/header-image', {
+        url: r.fullUrl, creditName: r.creditName, creditUrl: r.creditUrl, downloadLocation: r.downloadLocation,
+      })
+      document.getElementById('header-photo-search').hidden = true
+      document.getElementById('header-photo-query').value = ''
+      grid.innerHTML = ''; status.hidden = true
+      loadHeaderPhoto()
+    })
+    grid.appendChild(cell)
+  }
+}
+document.getElementById('header-photo-go').addEventListener('click', runHeaderPhotoSearch)
+document.getElementById('header-photo-query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); runHeaderPhotoSearch() }
+})
+document.getElementById('header-photo-remove-btn').addEventListener('click', async () => {
+  await api('DELETE', '/header-image')
+  loadHeaderPhoto()
 })
 
 document.getElementById('settings-form').addEventListener('submit', async e => {

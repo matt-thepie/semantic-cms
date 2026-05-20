@@ -142,15 +142,18 @@ router.get('/nav', (req, res) => {
 
 // Public site metadata (only safe, public fields)
 router.get('/site-meta', (req, res) => {
-  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits','nav_layout')").all()
+  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits','nav_layout','header_image')").all()
   const s = Object.fromEntries(rows.map(r => [r.key, r.value]))
   let imageCredits = []
   try { imageCredits = JSON.parse(s.image_credits || '[]') } catch {}
+  let headerImage = null
+  try { headerImage = s.header_image ? JSON.parse(s.header_image) : null } catch {}
   res.json({
     site_name: s.site_name || '',
     site_description: s.site_description || '',
     image_credits: imageCredits,
     nav_layout: s.nav_layout || 'topbar-dropdown',
+    header_image: headerImage,
   })
 })
 
@@ -447,6 +450,26 @@ router.post('/images/import', requireAdmin, async (req, res) => {
 
 router.get('/images/status', requireAdmin, (req, res) => {
   res.json({ configured: unsplashConfigured() })
+})
+
+// ─── Header background photo (a managed setting, not LLM-controlled) ───────────
+
+router.put('/header-image', requireAdmin, (req, res) => {
+  const { url, creditName, creditUrl, downloadLocation } = req.body
+  if (!url) return res.status(400).json({ error: 'url required' })
+  if (downloadLocation) trackDownload(downloadLocation) // Unsplash usage ping
+  const value = JSON.stringify({
+    url,
+    credit: creditName ? `Photo by ${creditName} on Unsplash` : null,
+    creditUrl: creditUrl || null,
+  })
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('header_image', value)
+  res.json({ ok: true })
+})
+
+router.delete('/header-image', requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM settings WHERE key = 'header_image'").run()
+  res.json({ ok: true })
 })
 
 router.post('/assets', requireAdmin, upload.single('file'), async (req, res) => {

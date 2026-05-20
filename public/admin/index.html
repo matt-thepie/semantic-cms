@@ -44,6 +44,26 @@
       </div>
 
       <div class="appearance-section">
+        <h2 class="section-h">Header photo</h2>
+        <p class="muted">A background photo across the top of every page. (Leave it off for a plain coloured header.)</p>
+        <div class="header-photo-current">
+          <div id="header-photo-preview" class="header-photo-preview header-photo-empty">No header photo</div>
+          <div class="header-photo-actions">
+            <button id="header-photo-search-btn" class="btn btn-primary btn-sm">Find a photo</button>
+            <button id="header-photo-remove-btn" class="btn btn-ghost btn-sm" hidden>Remove photo</button>
+          </div>
+        </div>
+        <div id="header-photo-search" hidden>
+          <div class="asset-search-bar">
+            <input type="search" id="header-photo-query" placeholder="Describe the photo you want (e.g. grand piano)…" autocomplete="off">
+            <button id="header-photo-go" class="btn btn-primary btn-sm">Search</button>
+          </div>
+          <p id="header-photo-status" class="muted" hidden></p>
+          <div id="header-photo-results" class="asset-grid"></div>
+        </div>
+      </div>
+
+      <div class="appearance-section">
         <h2 class="section-h">Menu layout</h2>
         <p class="muted">How your menu appears to visitors. This saves as soon as you choose.</p>
         <div class="layout-picker">

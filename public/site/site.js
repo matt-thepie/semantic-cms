@@ -168,15 +168,22 @@ async function loadSiteMeta() {
     const footerEl = document.getElementById('site-footer-name')
     if (footerEl && name) footerEl.textContent = `© ${new Date().getFullYear()} ${name}`
 
-    // Attribute background photos pulled in via the design feature (Unsplash requirement)
-    const credits = meta.image_credits || []
-    if (credits.length) {
-      const creditEl = document.getElementById('site-footer-credits')
-      if (creditEl) {
-        creditEl.innerHTML = 'Background photos: ' + credits.map(c =>
-          `<a href="${c.url}?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">${c.name}</a>`
-        ).join(', ') + ' on <a href="https://unsplash.com?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>'
-      }
+    // Header background photo — applied here (not via the AI design pass) so it
+    // can't be lost when the theme stylesheet is regenerated.
+    const header = meta.header_image
+    if (header && header.url) {
+      document.documentElement.style.setProperty('--header-bg-image', `url("${header.url}")`)
+      document.body.dataset.hasHeaderImage = ''
+    }
+
+    // Photo attribution (Unsplash requirement) — header photo + any design backgrounds
+    const credits = (meta.image_credits || []).slice()
+    if (header && header.credit) credits.push({ name: header.credit.replace(/^Photo by | on Unsplash$/g, ''), url: header.creditUrl })
+    const creditEl = document.getElementById('site-footer-credits')
+    if (credits.length && creditEl) {
+      creditEl.innerHTML = 'Photos: ' + credits.map(c =>
+        `<a href="${(c.url || 'https://unsplash.com')}?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">${c.name}</a>`
+      ).join(', ') + ' on <a href="https://unsplash.com?utm_source=semantic_cms&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>'
     }
   } catch {}
 }

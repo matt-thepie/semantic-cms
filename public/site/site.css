@@ -11,7 +11,7 @@
   --color-key-black: #1a1a1a;
   --color-header-bg: #1a1a2e;
   --color-header-text: #f5f5f0;
-  --color-header-overlay: rgba(10, 10, 20, 0.62);
+  --color-header-overlay: rgba(10, 10, 20, 0.55);
 
   --font-body: Georgia, 'Times New Roman', serif;
   --font-ui:   'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
@@ -19,8 +19,8 @@
   --content-w: 720px;
   --gap:       1.5rem;
 
-  --header-hero-min-h: 220px;
-  --header-bg-image: url('https://images.unsplash.com/photo-1684784176798-aae206e325e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTYzNzZ8MHwxfHNlYXJjaHwxfHxncmFuZCUyMHBpYW5vfGVufDF8fHx8MTc3OTI3ODI5OHww&ixlib=rb-4.1.0&q=80&w=1080');
+  --header-hero-min-h: 140px;
+  --header-bg-image: none;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,7 +33,7 @@
     --color-muted:   #999390;
     --color-header-bg: #0d0d14;
     --color-header-text: #f0ede8;
-    --color-header-overlay: rgba(5, 5, 15, 0.70);
+    --color-header-overlay: rgba(5, 5, 15, 0.62);
   }
 }
 
@@ -82,8 +82,8 @@ a { color: var(--color-accent) }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem var(--gap) .75rem;
-  gap: .75rem;
+  padding: .6rem var(--gap) .4rem;
+  gap: .4rem;
   max-width: var(--content-w);
   margin: 0 auto;
   text-align: center;
@@ -98,7 +98,7 @@ a { color: var(--color-accent) }
   letter-spacing: 0.05em;
   white-space: nowrap;
   flex-shrink: 0;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9);
   display: inline-block;
 }
 
@@ -141,8 +141,8 @@ a { color: var(--color-accent) }
   gap: .25rem;
   font-family: var(--font-ui);
   font-size: 1rem;
-  padding: .75rem var(--gap) 1rem;
-  border-top: 1px solid rgba(255,255,255,0.18);
+  padding: .5rem var(--gap) .6rem;
+  border-top: 1px solid rgba(255,255,255,0.25);
   max-width: var(--content-w);
   margin: 0 auto;
   width: 100%;
@@ -152,10 +152,10 @@ a { color: var(--color-accent) }
 .site-nav a {
   color: var(--color-header-text);
   text-decoration: none;
-  padding: .65rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-  opacity: 0.9;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  padding: .5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  opacity: 0.95;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9);
   width: 100%;
   text-align: center;
 }
@@ -168,23 +168,24 @@ a { color: var(--color-accent) }
 /* Tablet+ : horizontal nav, no hamburger */
 @media (min-width: 640px) {
   :root {
-    --header-hero-min-h: 260px;
+    --header-hero-min-h: 160px;
   }
 
   .site-header-bar {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem var(--gap) .75rem;
+    padding: .75rem var(--gap) .4rem;
     max-width: var(--content-w);
     margin: 0 auto;
     text-align: center;
-    gap: 1rem;
+    gap: .5rem;
   }
 
   .site-logo {
-    font-size: 1.55rem;
+    font-size: 1.75rem;
     letter-spacing: 0.06em;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.95);
   }
 
   .nav-toggle { display: none }
@@ -197,7 +198,7 @@ a { color: var(--color-accent) }
     justify-content: center;
     gap: 0;
     font-size: .9rem;
-    padding: 0 0 1rem;
+    padding: 0 0 .75rem;
     border-top: none;
     max-width: var(--content-w);
     margin: 0 auto;
@@ -205,15 +206,15 @@ a { color: var(--color-accent) }
   }
 
   .site-nav a {
-    color: rgba(245,245,240,0.82);
-    padding: .6rem 1rem;
+    color: rgba(245,245,240,0.92);
+    padding: .5rem 1rem;
     border-bottom: none;
     border-right: none;
     white-space: nowrap;
     letter-spacing: 0.02em;
     transition: color .15s, background .15s;
     border-radius: 4px;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.55);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9);
     text-align: center;
     width: auto;
   }
@@ -221,7 +222,7 @@ a { color: var(--color-accent) }
   .site-nav a:hover,
   .site-nav a.active {
     color: var(--color-key-white);
-    background: rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.25);
     opacity: 1;
   }
 }
@@ -230,7 +231,7 @@ a { color: var(--color-accent) }
 
 body::before {
   content: '';
-  display: block;
+  display: none;
   height: 6px;
   background: repeating-linear-gradient(
     to right,
@@ -366,6 +367,21 @@ figcaption { font-size: .875rem; color: var(--color-muted); margin-top: .5rem; f
 .download-item::before { content: '↓'; font-weight: 700 }
 .download-filename { color: var(--color-muted); font-size: .8rem; margin-left: auto }
 
-/* Contact form, footer, password gate and other content components are styled
-   in base.css (loaded first) so they always look good. Add theme overrides
-   here only if a design change needs them. */
+/* ─── Contact form ─────────────────────────────────────────────────────────── */
+
+.contact-form { max-width: 520px; margin: 1.5rem 0 }
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  margin-bottom: 1.1rem;
+}
+
+.form-field label {
+  font-family: var(--font-ui);
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.form-field input,
