@@ -79,14 +79,15 @@ a { color: var(--color-accent) }
 
 .site-header-bar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: .6rem var(--gap) .4rem;
   gap: .4rem;
   max-width: var(--content-w);
   margin: 0 auto;
-  text-align: center;
+  width: 100%;
+  text-align: left;
 }
 
 .site-logo {
@@ -103,7 +104,7 @@ a { color: var(--color-accent) }
 }
 
 .site-logo::before {
-  content: '🎹 ';
+  content: '';
 }
 
 /* Hamburger toggle — mobile only */
@@ -120,6 +121,7 @@ a { color: var(--color-accent) }
   height: 36px;
   align-items: center;
   flex-shrink: 0;
+  order: 2;
 }
 .nav-toggle span {
   display: block;

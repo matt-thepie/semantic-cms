@@ -428,6 +428,17 @@ function activateBlock(index) {
   wrapper.appendChild(editor)
 }
 
+// Re-render the active block, then focus a specific list item's editable —
+// used when adding an item or pressing Enter to make a new one.
+function activateBlockThenFocusItem(index, itemIdx) {
+  activateBlock(index)
+  setTimeout(() => {
+    const wrapper = document.querySelectorAll('.block-wrapper')[index]
+    const el = wrapper?.querySelector(`.list-item-edit[data-i="${itemIdx}"]`)
+    if (el) { el.focus(); placeCursorAtEnd(el) }
+  }, 0)
+}
+
 function buildBlockEditor(block, index) {
   const div = document.createElement('div')
   div.className = 'block-active-editor'
@@ -563,29 +574,78 @@ function buildEditorBody(block, index) {
     }
 
     case 'list': {
-      const itemsText = (block.content.items || []).map(item => spansToPlain(item)).join('\n')
+      const items = (block.content.items && block.content.items.length) ? block.content.items : [[{ text: '' }]]
+      block.content.items = items
+      const bullet = (i) => block.content.ordered ? `${i + 1}.` : '•'
+
       div.innerHTML = `
         <div class="list-editor">
-          <p class="muted">One item per line</p>
-          <textarea class="list-items-input" rows="${Math.max(3, (block.content.items || []).length)}"></textarea>
+          <p class="muted">One row per item. Select words and click 🔗 to turn them into a link.</p>
+          <div class="list-items-edit">
+            ${items.map((item, i) => `
+              <div class="list-item-row" data-i="${i}">
+                <span class="list-bullet">${bullet(i)}</span>
+                <div class="list-item-edit inline-editor" contenteditable="true" spellcheck="true" data-i="${i}"></div>
+                <button class="btn-icon list-item-link" data-i="${i}" title="Add a link" tabindex="-1">🔗</button>
+                <button class="btn-icon list-item-remove" data-i="${i}" title="Remove this item" tabindex="-1">✕</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-ghost list-add-btn">+ Add item</button>
         </div>
       `
-      const ta = div.querySelector('.list-items-input')
-      ta.value = itemsText
-      const sync = () => {
-        const lines = ta.value.split('\n')
-        block.content.items = lines.length ? lines.map(l => [{ text: l }]) : [[{ text: '' }]]
-      }
-      ta.addEventListener('input', () => {
-        sync()
-        const preview = ta.closest('.block-wrapper')?.querySelector('.block-preview')
+
+      // Fill each editable from its spans (so existing links/formatting show)
+      div.querySelectorAll('.list-item-edit').forEach(el => { el.innerHTML = spansToHtml(items[+el.dataset.i]) })
+
+      const syncItem = (i, el) => { block.content.items[i] = htmlToSpans(el) }
+      const refreshPreview = (el) => {
+        const preview = el.closest('.block-wrapper')?.querySelector('.block-preview')
         if (preview) preview.innerHTML = blockPreview(block)
+      }
+
+      div.querySelectorAll('.list-item-edit').forEach(el => {
+        const i = +el.dataset.i
+        el.addEventListener('input', () => { syncItem(i, el); refreshPreview(el) })
+        el.addEventListener('blur', () => syncItem(i, el))
+        el.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            syncItem(i, el)
+            block.content.items.splice(i + 1, 0, [{ text: '' }])
+            activateBlockThenFocusItem(index, i + 1)
+          }
+        })
       })
-      ta.addEventListener('blur', () => {
-        const lines = ta.value.split('\n').map(l => l.trim()).filter(l => l.length)
-        block.content.items = lines.length ? lines.map(l => [{ text: l }]) : [[{ text: '' }]]
+
+      div.querySelectorAll('.list-item-link').forEach(btn => {
+        btn.addEventListener('mousedown', e => e.preventDefault()) // keep the text selection
+        btn.addEventListener('click', () => {
+          const i = +btn.dataset.i
+          const el = div.querySelector(`.list-item-edit[data-i="${i}"]`)
+          el.focus()
+          const url = prompt('Link address (include https://):', 'https://')
+          if (url && url !== 'https://') document.execCommand('createLink', false, url)
+          syncItem(i, el)
+          refreshPreview(el)
+        })
       })
-      setTimeout(() => ta.focus(), 0)
+
+      div.querySelectorAll('.list-item-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          pushUndo()
+          block.content.items.splice(+btn.dataset.i, 1)
+          if (!block.content.items.length) block.content.items = [[{ text: '' }]]
+          activateBlock(index)
+        })
+      })
+
+      div.querySelector('.list-add-btn').addEventListener('click', () => {
+        block.content.items.push([{ text: '' }])
+        activateBlockThenFocusItem(index, block.content.items.length - 1)
+      })
+
+      setTimeout(() => { const f = div.querySelector('.list-item-edit'); if (f) { f.focus(); placeCursorAtEnd(f) } }, 0)
       break
     }
 

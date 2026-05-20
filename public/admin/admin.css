@@ -845,7 +845,16 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
 .pos-card .layout-wire { width: 100%; max-width: 72px }
-.list-items-input { width: 100%; resize: vertical; font-family: var(--font); line-height: 1.6 }
+.list-items-edit { display: flex; flex-direction: column; gap: .4rem }
+.list-item-row {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto auto;
+  align-items: center;
+  gap: .4rem;
+}
+.list-bullet { color: var(--color-muted); font-size: .85rem; text-align: center }
+.list-item-edit { min-height: 2.2rem; display: flex; align-items: center }
+.list-item-edit a { color: var(--color-accent); text-decoration: underline }
 .preview-list { margin: 0; padding-left: 1.25rem }
 .preview-list li { margin: 0 }
 .preview-empty { color: var(--color-muted); font-style: italic; opacity: .7 }
