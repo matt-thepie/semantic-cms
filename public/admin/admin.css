@@ -430,6 +430,7 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 .help-panel { margin-top: 1rem; display: flex; flex-direction: column; gap: .75rem }
 .help-panel label { font-size: .875rem; font-weight: 500 }
 .help-panel textarea { width: 100% }
+.help-scope-note { font-size: .8rem; margin: -.25rem 0 0; line-height: 1.45 }
 
 .help-preview {
   border: 1px solid var(--color-border);

@@ -1041,6 +1041,10 @@ document.getElementById('save-btn').addEventListener('click', save)
 document.getElementById('help-toggle').addEventListener('click', () => {
   const panel = document.getElementById('help-panel')
   panel.hidden = !panel.hidden
+  if (!panel.hidden) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => document.getElementById('help-input').focus(), 200)
+  }
 })
 
 document.getElementById('help-submit').addEventListener('click', async () => {
@@ -1066,13 +1070,17 @@ document.getElementById('help-submit').addEventListener('click', async () => {
     result.hidden = false
 
     document.getElementById('help-apply').onclick = async () => {
-      // Save with the adjusted HTML by triggering a save flow
-      const saveRes = await api('POST', `/pages/${pageId}/save`, { block_json: blocks })
+      // Persist the adjusted HTML directly — do NOT re-run the semantic pass
+      // (that would discard the adjustment).
+      const saveRes = await api('POST', `/pages/${pageId}/apply-html`, {
+        block_json: blocks,
+        rendered_html: adjusted_html,
+      })
       if (saveRes.ok) {
         currentHtml = adjusted_html
         document.getElementById('help-panel').hidden = true
         document.getElementById('help-result').hidden = true
-        showSaveStatus('Fix applied.')
+        showSaveStatus('Fix applied. Refresh the public page to see it.')
       }
     }
 

@@ -111,7 +111,27 @@ ${JSON.stringify(blockJson, null, 2)}`
 }
 
 export async function helpPass({ complaint, blockJson, currentHtml, pageTitle, pageSlug, pagePurpose, siteSettings, sitePages }) {
-  const prompt = loadPrompt('semantic')
+  const prompt = `${loadPrompt('semantic')}
+
+---
+
+HELP MODE (you are adjusting an existing page, not rendering from scratch)
+
+The editor is unhappy with how THIS PAGE'S CONTENT looks and has described the problem. Return the adjusted HTML fragment for this page only.
+
+SCOPE — what you CAN change:
+- How this page's own content (its headings, paragraphs, images, galleries, lists, forms) is structured and laid out
+- Image flow classes, figure wrapping, mobile reordering, grouping into lists/dl, spacing via the existing class vocabulary
+
+SCOPE — what you CANNOT change (these are NOT in this HTML and are controlled elsewhere):
+- The site navigation bar / menu, the site header, the site logo, or the site footer
+- Colours, fonts, or the overall visual theme (these live in the stylesheet)
+- Anything on other pages
+
+If the complaint is entirely about something out of scope (e.g. "centre the navbar", "change the colours", "make the font bigger"), DO NOT alter or delete the content. Return the CURRENT_HTML completely unchanged. It is far better to leave the page exactly as-is than to damage it trying to fulfil an impossible request.
+
+CONTENT PRESERVATION: never delete the page's content. Every block in BLOCK_JSON must still be present in your output. Adjust layout, never remove content.`
+
   const siteContext = buildSiteContext({ siteSettings, sitePages, pageSlug })
   const purposeLine = pagePurpose ? `\nTHIS_PAGE_PURPOSE: ${pagePurpose}` : ''
 

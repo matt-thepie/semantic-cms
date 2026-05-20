@@ -33,10 +33,12 @@
   <footer class="editor-footer">
     <button id="help-toggle" class="btn-link">Something doesn't look right?</button>
     <div id="help-panel" class="help-panel" hidden>
-      <label for="help-input">Tell me what looks wrong:</label>
-      <textarea id="help-input" rows="3" placeholder="The photo is too big on my phone..."></textarea>
+      <label for="help-input">Tell me what looks wrong with <strong>this page's content</strong>:</label>
+      <textarea id="help-input" rows="3" placeholder="e.g. The photo is too big on my phone. The text feels cramped next to the picture."></textarea>
+      <p class="help-scope-note muted">This adjusts how this page's text and images are laid out. For the navigation bar, colours, fonts, or the overall look of the whole site, use <strong>Change the design</strong> on the dashboard instead.</p>
       <button id="help-submit" class="btn btn-primary">Ask for help</button>
       <div id="help-result" hidden>
+        <p class="muted">Here's the adjusted version. Apply it if it looks better:</p>
         <div class="help-preview"></div>
         <div class="help-actions">
           <button id="help-apply" class="btn btn-primary">Apply this fix</button>
