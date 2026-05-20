@@ -1009,22 +1009,66 @@ dialog p  { color: var(--color-muted); margin-bottom: 1rem }
 
 /* ─── Form block editor ────────────────────────────────────────────────────── */
 
-.form-editor-panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  margin-top: 1rem;
+.form-block-editor { display: flex; flex-direction: column; gap: .5rem; align-items: flex-start }
+.form-block-fields { font-size: .85rem; color: var(--color-text); }
+
+/* Modal form editor */
+.form-editor-card {
+  max-width: 540px;
+  text-align: left;
+  padding: 1.5rem 1.75rem;
 }
-.form-editor-panel h3 { font-size: .95rem; margin-bottom: 1rem }
-.form-fields-list { list-style: none; display: flex; flex-direction: column; gap: .375rem; margin-bottom: 1rem }
-.form-fields-list li {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
+.fe-head {
+  display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: .375rem .5rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.fe-head h2 { margin: 0 }
+.fe-label {
+  display: block;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin: 1rem 0 .35rem;
+}
+.fe-section-title { font-size: .9rem; margin: 1.5rem 0 .6rem }
+.fe-fields { display: flex; flex-direction: column; gap: .6rem; margin-bottom: .75rem }
+.fe-empty { padding: .5rem 0 }
+
+.fe-row {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  padding: .65rem .75rem;
+  background: var(--color-bg);
 }
-.form-block-editor { display: flex; flex-direction: column; gap: .75rem; align-items: flex-start }
+.fe-row-main { display: flex; gap: .5rem; align-items: center }
+.fe-row-main .fe-row-label { flex: 1 }
+.fe-row-main .fe-row-type { width: auto; flex-shrink: 0 }
+.fe-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .5rem;
+}
+.fe-check { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--color-muted); width: auto }
+.fe-check input { width: auto }
+.fe-row-actions { display: inline-flex; gap: .15rem }
+
+.fe-options {
+  margin-top: .65rem;
+  padding-top: .65rem;
+  border-top: 1px dashed var(--color-border);
+}
+.fe-options-label { font-size: .78rem; font-weight: 600; color: var(--color-muted); margin-bottom: .4rem }
+.fe-options-list { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .5rem }
+.fe-option-row { display: flex; gap: .15rem; align-items: center }
+.fe-option-row .fe-option-input { flex: 1 }
+
+.fe-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}

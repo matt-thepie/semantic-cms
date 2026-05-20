@@ -88,7 +88,9 @@ Contact forms:
 - Render as <form class="contact-form" method="post" action="/api/contact" novalidate>
 - Each field is wrapped in <div class="form-field">
 - Always pair <label> with its input via for/id attributes
-- Use the correct input type for each field type
+- Use the correct input type for each field type (text→<input type="text">, email→<input type="email">, tel→<input type="tel">, textarea→<textarea>, select→<select>)
+- Give every input/textarea/select a name attribute derived from its label as a lowercase slug (spaces → underscores). The "name", "email" and "message" fields must use exactly those names so submissions are delivered.
+- For a select field, render a <select> containing one <option> for EACH entry in that field's `options` array, in the given order, with the option text as both the visible text and the value. Render every option exactly as provided — never invent, reword, reorder or omit choices. Begin the <select> with a placeholder <option value="" disabled selected> (e.g. "Please choose…") so nothing is preselected.
 - Required fields get the required attribute and an aria-required="true"
 - The submit button is <button type="submit" class="form-submit">
 - Never use table layout for forms

@@ -816,10 +816,14 @@ function buildEditorBody(block, index) {
 
     case 'contact-form': {
       const fields = block.content.fields || []
+      const summary = fields.length
+        ? fields.map(f => escHtml(spansToPlain(f.label) || f.type)).join(' · ')
+        : 'No fields yet'
       div.innerHTML = `
         <div class="form-block-editor">
-          <p class="muted">Contact form — ${fields.length} field${fields.length !== 1 ? 's' : ''}</p>
-          <button class="btn btn-ghost edit-fields-btn">Edit fields</button>
+          <p class="muted">✉ Contact form</p>
+          <p class="form-block-fields">${summary}</p>
+          <button class="btn btn-ghost edit-fields-btn">Edit form</button>
         </div>
       `
       div.querySelector('.edit-fields-btn').addEventListener('click', () => openFormEditor(block, index))
@@ -973,66 +977,177 @@ document.getElementById('image-search-input').addEventListener('keydown', e => {
 
 // ─── Form field editor ────────────────────────────────────────────────────────
 
-function openFormEditor(block, index) {
-  // Simple inline field list editing — a future enhancement could use a proper side panel
-  const existing = document.getElementById('form-editor-panel')
-  if (existing) existing.remove()
+const FIELD_TYPES = [
+  { value: 'text',     label: 'Short text' },
+  { value: 'email',    label: 'Email' },
+  { value: 'tel',      label: 'Phone' },
+  { value: 'textarea', label: 'Long text' },
+  { value: 'select',   label: 'Dropdown' },
+]
 
-  const panel = document.createElement('div')
-  panel.id = 'form-editor-panel'
-  panel.className = 'form-editor-panel'
-  panel.innerHTML = `
-    <h3>Contact Form Fields</h3>
-    <ul class="form-fields-list">
-      ${(block.content.fields || []).map((f, i) => `
-        <li>
-          <span>${spansToPlain(f.label)}</span>
-          <span class="muted">${f.type}</span>
-          <button class="btn-icon remove-field" data-i="${i}">✕</button>
-        </li>
-      `).join('')}
-    </ul>
-    <button class="btn btn-ghost add-field-btn">+ Add field</button>
-    <div class="form-field">
-      <label>Submit button text</label>
-      <input type="text" class="submit-label-input" value="${escAttr(spansToPlain(block.content.submit_label))}">
+// A proper modal editor for contact-form fields. No browser prompt/confirm.
+function openFormEditor(block, index) {
+  document.getElementById('form-editor-overlay')?.remove()
+  const content = block.content
+  content.fields = content.fields || []
+
+  const overlay = document.createElement('div')
+  overlay.id = 'form-editor-overlay'
+  overlay.className = 'overlay'
+  overlay.innerHTML = `
+    <div class="overlay-card form-editor-card" role="dialog" aria-modal="true" aria-label="Edit form">
+      <div class="fe-head">
+        <h2>Edit form</h2>
+        <button class="btn-icon" data-fe-close title="Done">✕</button>
+      </div>
+
+      <label class="fe-label" for="fe-heading">Form heading</label>
+      <input id="fe-heading" class="fe-heading" type="text"
+             value="${escAttr(spansToPlain(content.heading))}" placeholder="e.g. Get in touch">
+
+      <h3 class="fe-section-title">Fields</h3>
+      <div class="fe-fields"></div>
+      <button class="btn btn-ghost fe-add-field">+ Add field</button>
+
+      <label class="fe-label" for="fe-submit">Submit button text</label>
+      <input id="fe-submit" class="fe-submit" type="text"
+             value="${escAttr(spansToPlain(content.submit_label))}" placeholder="e.g. Send message">
+
+      <div class="fe-foot">
+        <button class="btn btn-primary" data-fe-close>Done</button>
+      </div>
     </div>
-    <button class="btn btn-primary close-form-editor">Done</button>
   `
 
-  panel.querySelectorAll('.remove-field').forEach(btn => {
-    btn.addEventListener('click', () => {
-      pushUndo()
-      block.content.fields.splice(parseInt(btn.dataset.i), 1)
-      openFormEditor(block, index)
-    })
-  })
+  const fieldsWrap = overlay.querySelector('.fe-fields')
 
-  panel.querySelector('.add-field-btn').addEventListener('click', () => {
-    const label = prompt('Field label?')
-    if (!label) return
-    const type = prompt('Field type? (text/email/tel/textarea/select)', 'text')
-    if (!type) return
-    pushUndo()
-    block.content.fields.push({
-      id: `field_${label.toLowerCase().replace(/\s+/g, '_')}`,
-      type,
-      label: [{ text: label }],
-      required: false,
-    })
-    openFormEditor(block, index)
-  })
-
-  panel.querySelector('.submit-label-input').addEventListener('change', e => {
-    block.content.submit_label = [{ text: e.target.value }]
-  })
-
-  panel.querySelector('.close-form-editor').addEventListener('click', () => {
-    panel.remove()
+  const close = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', onKey)
     renderBlocks()
-  })
+  }
+  const onKey = e => { if (e.key === 'Escape') close() }
 
-  document.querySelector('.editor-main').appendChild(panel)
+  overlay.querySelector('.fe-heading').addEventListener('input', e => {
+    content.heading = e.target.value ? [{ text: e.target.value }] : []
+  })
+  overlay.querySelector('.fe-submit').addEventListener('input', e => {
+    content.submit_label = e.target.value ? [{ text: e.target.value }] : []
+  })
+  overlay.querySelector('.fe-add-field').addEventListener('click', () => {
+    pushUndo()
+    content.fields.push({ id: nextFieldId(), type: 'text', label: [{ text: '' }], required: false })
+    renderFields()
+    fieldsWrap.querySelector('.fe-row:last-child .fe-row-label')?.focus()
+  })
+  overlay.querySelectorAll('[data-fe-close]').forEach(b => b.addEventListener('click', close))
+  overlay.addEventListener('mousedown', e => { if (e.target === overlay) close() })
+  document.addEventListener('keydown', onKey)
+
+  function nextFieldId() {
+    const ids = new Set(content.fields.map(f => f.id))
+    let n = content.fields.length + 1
+    while (ids.has(`field_${n}`)) n++
+    return `field_${n}`
+  }
+
+  function renderFields() {
+    fieldsWrap.innerHTML = ''
+    if (!content.fields.length) {
+      fieldsWrap.innerHTML = `<p class="muted fe-empty">No fields yet. Add one below.</p>`
+    }
+    content.fields.forEach((f, i) => fieldsWrap.appendChild(renderFieldCard(f, i)))
+  }
+
+  function renderFieldCard(f, i) {
+    const row = document.createElement('div')
+    row.className = 'fe-row'
+    const isSelect = f.type === 'select'
+    row.innerHTML = `
+      <div class="fe-row-main">
+        <input class="fe-row-label" type="text" value="${escAttr(spansToPlain(f.label))}"
+               placeholder="Field label (e.g. Instrument)">
+        <select class="fe-row-type">
+          ${FIELD_TYPES.map(t => `<option value="${t.value}"${t.value === f.type ? ' selected' : ''}>${t.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fe-row-meta">
+        <label class="fe-check"><input type="checkbox" class="fe-row-required"${f.required ? ' checked' : ''}> Required</label>
+        <span class="fe-row-actions">
+          <button class="btn-icon fe-row-up" title="Move up"${i === 0 ? ' disabled' : ''}>↑</button>
+          <button class="btn-icon fe-row-down" title="Move down"${i === content.fields.length - 1 ? ' disabled' : ''}>↓</button>
+          <button class="btn-icon fe-row-remove" title="Remove field">✕</button>
+        </span>
+      </div>
+      ${isSelect ? `<div class="fe-options"></div>` : ''}
+    `
+
+    row.querySelector('.fe-row-label').addEventListener('input', e => {
+      f.label = e.target.value ? [{ text: e.target.value }] : []
+    })
+    row.querySelector('.fe-row-type').addEventListener('change', e => {
+      pushUndo()
+      f.type = e.target.value
+      if (f.type === 'select' && !Array.isArray(f.options)) f.options = ['']
+      renderFields()
+    })
+    row.querySelector('.fe-row-required').addEventListener('change', e => { f.required = e.target.checked })
+    row.querySelector('.fe-row-up').addEventListener('click', () => moveItem(content.fields, i, -1))
+    row.querySelector('.fe-row-down').addEventListener('click', () => moveItem(content.fields, i, 1))
+    row.querySelector('.fe-row-remove').addEventListener('click', () => {
+      pushUndo(); content.fields.splice(i, 1); renderFields()
+    })
+
+    if (isSelect) renderOptions(row.querySelector('.fe-options'), f)
+    return row
+  }
+
+  function moveItem(arr, i, dir) {
+    const j = i + dir
+    if (j < 0 || j >= arr.length) return
+    pushUndo()
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    renderFields()
+  }
+
+  function renderOptions(wrap, f) {
+    f.options = Array.isArray(f.options) ? f.options : ['']
+    wrap.innerHTML = `
+      <p class="fe-options-label">Dropdown choices</p>
+      <div class="fe-options-list"></div>
+      <button class="btn btn-ghost btn-sm fe-add-option">+ Add choice</button>
+    `
+    const list = wrap.querySelector('.fe-options-list')
+    f.options.forEach((opt, oi) => {
+      const r = document.createElement('div')
+      r.className = 'fe-option-row'
+      r.innerHTML = `
+        <input type="text" class="fe-option-input" value="${escAttr(opt)}" placeholder="e.g. Piano">
+        <button class="btn-icon fe-opt-up" title="Move up"${oi === 0 ? ' disabled' : ''}>↑</button>
+        <button class="btn-icon fe-opt-down" title="Move down"${oi === f.options.length - 1 ? ' disabled' : ''}>↓</button>
+        <button class="btn-icon fe-opt-remove" title="Remove choice">✕</button>
+      `
+      r.querySelector('.fe-option-input').addEventListener('input', e => { f.options[oi] = e.target.value })
+      r.querySelector('.fe-opt-up').addEventListener('click', () => {
+        if (oi === 0) return; pushUndo(); [f.options[oi-1], f.options[oi]] = [f.options[oi], f.options[oi-1]]; renderOptions(wrap, f)
+      })
+      r.querySelector('.fe-opt-down').addEventListener('click', () => {
+        if (oi === f.options.length - 1) return; pushUndo(); [f.options[oi+1], f.options[oi]] = [f.options[oi], f.options[oi+1]]; renderOptions(wrap, f)
+      })
+      r.querySelector('.fe-opt-remove').addEventListener('click', () => {
+        pushUndo(); f.options.splice(oi, 1); if (!f.options.length) f.options.push(''); renderOptions(wrap, f)
+      })
+      list.appendChild(r)
+    })
+    wrap.querySelector('.fe-add-option').addEventListener('click', () => {
+      pushUndo(); f.options.push(''); renderOptions(wrap, f)
+      list.querySelector('.fe-option-row:last-child .fe-option-input')?.focus()
+    })
+  }
+
+  renderFields()
+  document.body.appendChild(overlay)
+  overlay.querySelector('.fe-heading').focus()
 }
 
 // ─── Version history ──────────────────────────────────────────────────────────
