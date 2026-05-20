@@ -235,6 +235,10 @@ async function loadSettings() {
     const el = document.getElementById(key)
     if (el && el.type !== 'password') el.value = val
   }
+  // nav_layout is a set of radio cards, not a single field
+  const navLayout = settings.nav_layout || 'topbar-dropdown'
+  const radio = document.querySelector(`input[name="nav_layout"][value="${navLayout}"]`)
+  if (radio) radio.checked = true
   const siteName = settings.site_name || 'Semantic CMS'
   document.getElementById('site-name').textContent = siteName
 }

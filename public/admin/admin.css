@@ -303,6 +303,53 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 }
 .form-field label { font-size: .875rem; font-weight: 500 }
 
+/* ─── Navigation layout picker (visual cards) ──────────────────────────────── */
+
+.layout-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .75rem;
+}
+
+.layout-option { cursor: pointer; display: block }
+.layout-option input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.layout-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+  text-align: center;
+  padding: .9rem .75rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  height: 100%;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.layout-option:hover .layout-card { border-color: var(--color-muted) }
+.layout-option input:checked + .layout-card {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+.layout-option input:focus-visible + .layout-card {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+.layout-wire { width: 100%; max-width: 96px; height: auto; display: block }
+.layout-wire .nav-page { fill: var(--color-bg); stroke: var(--color-border); stroke-width: 1.5 }
+.layout-wire .nav-bar  { fill: var(--color-accent) }
+.layout-wire .nav-drop { fill: var(--color-accent); opacity: .45 }
+.layout-wire .nav-line { fill: var(--color-muted); opacity: .55 }
+
+.layout-name { font-weight: 600; font-size: .85rem }
+.layout-desc { font-size: .72rem; color: var(--color-muted); line-height: 1.35 }
+
 .settings-actions { display: flex; gap: .75rem; margin-top: 1.5rem }
 
 .status-message { margin-top: .75rem; color: var(--color-success); font-size: .875rem }

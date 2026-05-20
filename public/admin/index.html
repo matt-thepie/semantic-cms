@@ -55,12 +55,53 @@
             <input type="text" id="site_description" name="site_description">
           </div>
           <div class="form-field">
-            <label for="nav_layout">Navigation layout</label>
-            <select id="nav_layout" name="nav_layout">
-              <option value="topbar-dropdown">Top bar with dropdowns (sub-pages drop down)</option>
-              <option value="topbar-flat">Top bar, no dropdowns (sub-pages shown within their parent only)</option>
-              <option value="sidebar">Left sidebar (sub-pages indented underneath)</option>
-            </select>
+            <label>Navigation layout</label>
+            <div class="layout-picker">
+              <label class="layout-option">
+                <input type="radio" name="nav_layout" value="topbar-dropdown" checked>
+                <span class="layout-card">
+                  <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                    <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                    <rect class="nav-bar" x="1.5" y="1.5" width="61" height="9" rx="3"/>
+                    <rect class="nav-drop" x="14" y="12" width="16" height="13" rx="2"/>
+                    <rect class="nav-line" x="6" y="30" width="52" height="2.5" rx="1"/>
+                    <rect class="nav-line" x="6" y="35" width="40" height="2.5" rx="1"/>
+                  </svg>
+                  <span class="layout-name">Top bar with menus</span>
+                  <span class="layout-desc">Sub-pages drop down from the top</span>
+                </span>
+              </label>
+
+              <label class="layout-option">
+                <input type="radio" name="nav_layout" value="topbar-flat">
+                <span class="layout-card">
+                  <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                    <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                    <rect class="nav-bar" x="1.5" y="1.5" width="61" height="9" rx="3"/>
+                    <rect class="nav-line" x="6" y="18" width="52" height="2.5" rx="1"/>
+                    <rect class="nav-line" x="6" y="24" width="52" height="2.5" rx="1"/>
+                    <rect class="nav-line" x="6" y="30" width="40" height="2.5" rx="1"/>
+                  </svg>
+                  <span class="layout-name">Simple top bar</span>
+                  <span class="layout-desc">No drop-downs; sub-pages live inside their parent</span>
+                </span>
+              </label>
+
+              <label class="layout-option">
+                <input type="radio" name="nav_layout" value="sidebar">
+                <span class="layout-card">
+                  <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                    <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                    <rect class="nav-bar" x="1.5" y="1.5" width="17" height="41" rx="3"/>
+                    <rect class="nav-line" x="24" y="9" width="34" height="2.5" rx="1"/>
+                    <rect class="nav-line" x="24" y="15" width="34" height="2.5" rx="1"/>
+                    <rect class="nav-line" x="24" y="21" width="26" height="2.5" rx="1"/>
+                  </svg>
+                  <span class="layout-name">Side menu</span>
+                  <span class="layout-desc">Menu down the left, sub-pages indented</span>
+                </span>
+              </label>
+            </div>
           </div>
           <div class="form-field">
             <label for="site_ia">Information architecture</label>
