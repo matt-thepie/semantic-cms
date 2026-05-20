@@ -160,11 +160,12 @@ Your job is to update the stylesheet so it reflects the brief — changing colou
 
 RULES
 - Return only the complete updated CSS. No explanation, no markdown, no commentary.
+- CRITICAL: The returned stylesheet MUST contain every CSS selector that the current stylesheet contains. You may change property values, add new rules, and adjust layout — but you must NEVER delete an existing selector or rule. Every selector present in CURRENT CSS must still be present in your output. Dropping a rule breaks the live site.
 - All colours must be CSS custom properties defined in :root. Change the custom property values to achieve colour changes — do not hardcode hex or rgb values elsewhere in the stylesheet.
 - Keep the file mobile-first: base styles for mobile, min-width media queries for larger screens.
 - Preserve the existing CSS custom property names — you may change their values.
 - You may add new custom properties to :root if needed, but keep the set minimal.
-- Do not remove any structural class rules (flow-left, gallery-grid, contact-form, etc.) — only change their visual properties if the brief calls for it.
+- Structural and component selectors (site-header, site-nav, site-footer, flow-left, flow-right, gallery-grid, contact-form, form-field, image-credit, etc.) must all survive — only change their visual properties if the brief calls for it.
 - Dark mode overrides stay in @media (prefers-color-scheme: dark) immediately after :root.${imageRule}`
 
   const imagesBlock = imageUrls.length

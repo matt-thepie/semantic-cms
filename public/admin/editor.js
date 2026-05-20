@@ -135,6 +135,47 @@ function escAttr(str) {
   return String(str).replace(/"/g, '&quot;')
 }
 
+// Parse a contentEditable element's DOM back into the Span[] format,
+// capturing strong/em/u/sup/link marks. Used to persist inline formatting.
+function htmlToSpans(root) {
+  const spans = []
+  const walk = (node, marks) => {
+    for (const child of node.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (child.textContent) {
+          spans.push(marks.length ? { text: child.textContent, marks: [...marks] } : { text: child.textContent })
+        }
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName.toLowerCase()
+        let mark = null
+        if (tag === 'strong' || tag === 'b') mark = 'strong'
+        else if (tag === 'em' || tag === 'i') mark = 'em'
+        else if (tag === 'u') mark = 'u'
+        else if (tag === 'sup') mark = 'sup'
+        else if (tag === 'a') mark = { type: 'link', href: child.getAttribute('href') || '' }
+        else if (tag === 'br') { spans.push({ text: '\n' }); continue }
+        else if (tag === 'div' || tag === 'p') { walk(child, marks); continue }
+        walk(child, mark ? [...marks, mark] : marks)
+      }
+    }
+  }
+  walk(root, [])
+  return normalizeSpans(spans)
+}
+
+// Merge adjacent spans with identical marks, drop empties, guarantee at least one span.
+function normalizeSpans(spans) {
+  const same = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || [])
+  const out = []
+  for (const s of spans) {
+    if (!s.text) continue
+    const last = out[out.length - 1]
+    if (last && same(last.marks, s.marks)) last.text += s.text
+    else out.push({ text: s.text, ...(s.marks ? { marks: s.marks } : {}) })
+  }
+  return out.length ? out : [{ text: '' }]
+}
+
 function blockPreview(block) {
   const emptyHint = '<span class="preview-empty">Empty — click to edit</span>'
   switch (block.type) {
@@ -418,6 +459,27 @@ function buildBlockEditor(block, index) {
     })
   })
 
+  // Inline formatting buttons (bold/italic/underline/link) for paragraphs
+  div.querySelectorAll('[data-fmt]').forEach(btn => {
+    // mousedown + preventDefault keeps the text selection inside the editor
+    btn.addEventListener('mousedown', e => e.preventDefault())
+    btn.addEventListener('click', () => {
+      const editor = div.querySelector('.inline-editor')
+      if (!editor) return
+      editor.focus()
+      const fmt = btn.dataset.fmt
+      if (fmt === 'link') {
+        const url = prompt('Link URL (include https://):', 'https://')
+        if (url && url !== 'https://') document.execCommand('createLink', false, url)
+      } else {
+        document.execCommand(fmt, false, null)
+      }
+      block.content.text = htmlToSpans(editor)
+      const preview = div.closest('.block-wrapper')?.querySelector('.block-preview')
+      if (preview) preview.innerHTML = blockPreview(block)
+    })
+  })
+
   return div
 }
 
@@ -429,7 +491,12 @@ function buildToolbar(block, index) {
   let specific = ''
   switch (block.type) {
     case 'paragraph':
-      specific = `<button class="toolbar-btn" data-transform="heading" title="Convert to heading">↕ Heading</button>
+      specific = `<button class="toolbar-btn" data-fmt="bold" title="Bold"><b>B</b></button>
+        <button class="toolbar-btn" data-fmt="italic" title="Italic"><i>I</i></button>
+        <button class="toolbar-btn" data-fmt="underline" title="Underline"><u>U</u></button>
+        <button class="toolbar-btn" data-fmt="link" title="Add link">🔗</button>
+        <span class="toolbar-sep"></span>
+        <button class="toolbar-btn" data-transform="heading" title="Convert to heading">↕ Heading</button>
         <button class="toolbar-btn" data-transform="list" title="Convert to list">↕ List</button>
         <span class="toolbar-sep"></span>`
       break
@@ -472,7 +539,13 @@ function buildEditorBody(block, index) {
       ta.contentEditable = 'true'
       ta.spellcheck = true
       ta.innerHTML = spansToHtml(block.content.text)
-      const syncText = () => { block.content.text = [{ text: ta.innerText.trim() }] }
+      // Headings stay plain text (the semantic pass strips heading marks anyway);
+      // paragraphs preserve inline marks (bold/italic/underline/link).
+      const syncText = () => {
+        block.content.text = block.type === 'heading'
+          ? [{ text: ta.innerText.trim() }]
+          : htmlToSpans(ta)
+      }
       ta.addEventListener('input', () => {
         syncText()
         // Refresh just this block's preview — no full re-render (that would

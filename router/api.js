@@ -475,6 +475,49 @@ router.delete('/assets/:id', requireAdmin, async (req, res) => {
 
 // ─── CSS Audit ────────────────────────────────────────────────────────────────
 
+// Split CSS into top-level rules (selector + full body), balancing braces.
+function topLevelRules(css) {
+  const rules = []
+  let i = 0, selStart = 0
+  while (i < css.length) {
+    if (css[i] === '{') {
+      let depth = 1, j = i + 1
+      while (j < css.length && depth > 0) {
+        if (css[j] === '{') depth++
+        else if (css[j] === '}') depth--
+        j++
+      }
+      rules.push({ selector: css.slice(selStart, i).trim(), rule: css.slice(selStart, j).trim() })
+      i = j; selStart = j
+    } else i++
+  }
+  return rules
+}
+
+// Safety net: if the design pass dropped any required structural/component
+// selector entirely, re-append the original rule so the site never breaks.
+function preserveStructuralRules(oldCss, newCss) {
+  const required = [
+    '.site-header', '.site-header-bar', '.site-logo', '.nav-toggle', '.site-nav',
+    '.site-content', '.site-footer', '.site-footer-credits',
+    '.flow-left', '.flow-right', '.flow-full', '.flow-center',
+    '.gallery-grid', '.gallery-strip', '.download-list', '.download-item', '.download-filename',
+    '.contact-form', '.form-field', '.form-submit', '.page-section', '.image-credit',
+  ]
+  const oldRules = topLevelRules(oldCss)
+  const restored = []
+  for (const sel of required) {
+    if (!newCss.includes(sel)) {
+      for (const r of oldRules) {
+        if (r.selector.includes(sel)) restored.push(r.rule)
+      }
+    }
+  }
+  if (!restored.length) return newCss
+  const unique = [...new Set(restored)]
+  return `${newCss}\n\n/* Auto-restored structural rules the design pass dropped */\n${unique.join('\n\n')}`
+}
+
 router.post('/css/design', requireAdmin, async (req, res) => {
   const { brief } = req.body
   if (!brief?.trim()) return res.status(400).json({ error: 'brief required' })
@@ -513,7 +556,9 @@ router.post('/css/design', requireAdmin, async (req, res) => {
       }
     }
 
-    const updatedCss = await designPass({ brief, currentCss, allPageHtml, imageUrls })
+    let updatedCss = await designPass({ brief, currentCss, allPageHtml, imageUrls })
+    // Safety net against the LLM dropping structural rules
+    updatedCss = preserveStructuralRules(currentCss, updatedCss)
 
     // Persist credits so the public footer can attribute background photos
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
