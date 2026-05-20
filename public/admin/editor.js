@@ -354,6 +354,15 @@ function buildBlockEditor(block, index) {
     if (confirm('Delete this block?')) deleteBlock(index)
   })
 
+  // Heading level buttons (live in the toolbar, not the body)
+  div.querySelectorAll('[data-level]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pushUndo()
+      block.content.level = parseInt(btn.dataset.level)
+      activateBlock(index)
+    })
+  })
+
   return div
 }
 
@@ -400,26 +409,15 @@ function buildEditorBody(block, index) {
       ta.contentEditable = 'true'
       ta.spellcheck = true
       ta.innerHTML = spansToHtml(block.content.text)
+      const syncText = () => { block.content.text = [{ text: ta.innerText.trim() }] }
       ta.addEventListener('input', () => {
-        block.content.text = [{ text: ta.innerText }]
+        syncText()
+        // Refresh just this block's preview — no full re-render (that would
+        // destroy the DOM mid-interaction and break the next click)
+        const preview = ta.closest('.block-wrapper')?.querySelector('.block-preview')
+        if (preview) preview.innerHTML = blockPreview(block)
       })
-      ta.addEventListener('blur', () => {
-        block.content.text = [{ text: ta.innerText }]
-        renderBlocks()
-        activateBlock(index)
-      })
-
-      // Heading level buttons
-      div.addEventListener('click', e => {
-        const lvl = e.target.dataset?.level
-        if (lvl && block.type === 'heading') {
-          pushUndo()
-          block.content.level = parseInt(lvl)
-          activateBlock(index)
-        }
-        const fmt = e.target.dataset?.fmt
-        if (fmt) document.execCommand(fmt === 'strong' ? 'bold' : fmt === 'em' ? 'italic' : fmt)
-      })
+      ta.addEventListener('blur', syncText)
 
       div.appendChild(ta)
       setTimeout(() => { ta.focus(); placeCursorAtEnd(ta) }, 0)
