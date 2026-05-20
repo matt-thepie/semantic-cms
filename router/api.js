@@ -340,9 +340,18 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
   const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
-  const previousVersion = db.prepare('SELECT block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
+  const previousVersion = db.prepare('SELECT id, block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
   const previousBlocks = previousVersion ? JSON.parse(previousVersion.block_json) : []
   const previousHtml   = previousVersion?.rendered_html || ''
+
+  // If the blocks are identical to the last saved version, keep the existing
+  // HTML rather than re-running the semantic pass. This preserves any layout
+  // adjustment applied via the "Change the layout" flow (stored by apply-html),
+  // which a fresh render would otherwise discard — and avoids a needless LLM call.
+  if (previousVersion && previousHtml && JSON.stringify(block_json) === previousVersion.block_json) {
+    db.prepare('UPDATE pages SET updated_at = ? WHERE id = ?').run(now(), page.id)
+    return res.json({ version_id: previousVersion.id, rendered_html: previousHtml, description: 'No changes', unchanged: true })
+  }
 
   const assetMap = getAssetMap(block_json)
   const siteSettings = getSiteSettings()
