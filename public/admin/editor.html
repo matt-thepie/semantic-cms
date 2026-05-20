@@ -26,27 +26,26 @@
   <div id="save-status" class="save-status" hidden></div>
 
   <main class="editor-main">
-    <input id="page-purpose" type="text" class="page-purpose-input" placeholder="What is this page for? (e.g. &quot;primary contact point for new pupils&quot;) — helps the AI make better mobile decisions" spellcheck="false">
-    <div id="block-stack" class="block-stack"></div>
-  </main>
-
-  <footer class="editor-footer">
-    <button id="help-toggle" class="btn-link">Something doesn't look right?</button>
-    <div id="help-panel" class="help-panel" hidden>
-      <label for="help-input">Tell me what looks wrong with <strong>this page's content</strong>:</label>
-      <textarea id="help-input" rows="3" placeholder="e.g. The photo is too big on my phone. The text feels cramped next to the picture."></textarea>
-      <p class="help-scope-note muted">This adjusts how this page's text and images are laid out. For the navigation bar, colours, fonts, or the overall look of the whole site, use <strong>Change the design</strong> on the dashboard instead.</p>
-      <button id="help-submit" class="btn btn-primary">Ask for help</button>
+    <section class="layout-ask">
+      <label for="help-input" class="layout-ask-label">✨ Change the layout of this page</label>
+      <div class="layout-ask-row">
+        <input id="help-input" type="text" placeholder="Describe a change — e.g. “put the photo above the text on phones”, “make the gallery bigger”">
+        <button id="help-submit" class="btn btn-primary" title="Ask the AI to adjust this page's layout">Send</button>
+      </div>
+      <p class="layout-ask-note muted">Adjusts how this page's text and images are arranged. For colours, fonts or the whole-site look, use <strong>Appearance</strong> on the dashboard.</p>
       <div id="help-result" hidden>
-        <p class="muted">Here's the adjusted version. Apply it if it looks better:</p>
+        <p class="muted">Here's the adjusted version:</p>
         <div class="help-preview"></div>
         <div class="help-actions">
-          <button id="help-apply" class="btn btn-primary">Apply this fix</button>
+          <button id="help-apply" class="btn btn-primary">Use this</button>
           <button id="help-retry" class="btn btn-ghost">Try again</button>
         </div>
       </div>
-    </div>
-  </footer>
+    </section>
+
+    <input id="page-purpose" type="text" class="page-purpose-input" placeholder="What is this page for? (e.g. &quot;primary contact point for new pupils&quot;) — helps the AI make better mobile decisions" spellcheck="false">
+    <div id="block-stack" class="block-stack"></div>
+  </main>
 
   <!-- Version history panel -->
   <aside id="history-panel" class="side-panel" hidden>

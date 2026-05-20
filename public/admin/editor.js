@@ -1128,23 +1128,15 @@ function showSaveStatus(msg, isError = false) {
 
 document.getElementById('save-btn').addEventListener('click', save)
 
-// ─── Plain-English help ───────────────────────────────────────────────────────
+// ─── Change the layout of this page ─────────────────────────────────────────────
 
-document.getElementById('help-toggle').addEventListener('click', () => {
-  const panel = document.getElementById('help-panel')
-  panel.hidden = !panel.hidden
-  if (!panel.hidden) {
-    panel.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setTimeout(() => document.getElementById('help-input').focus(), 200)
-  }
-})
-
-document.getElementById('help-submit').addEventListener('click', async () => {
+async function submitLayoutChange() {
   const complaint = document.getElementById('help-input').value.trim()
   if (!complaint) return
 
-  document.getElementById('help-submit').disabled = true
-  document.getElementById('help-submit').textContent = 'Working...'
+  const btn = document.getElementById('help-submit')
+  btn.disabled = true
+  btn.textContent = 'Working…'
 
   const res = await api('POST', `/pages/${pageId}/help`, {
     complaint,
@@ -1152,8 +1144,8 @@ document.getElementById('help-submit').addEventListener('click', async () => {
     current_html: currentHtml,
   })
 
-  document.getElementById('help-submit').disabled = false
-  document.getElementById('help-submit').textContent = 'Ask for help'
+  btn.disabled = false
+  btn.textContent = 'Send'
 
   if (res.ok) {
     const { adjusted_html } = await res.json()
@@ -1170,9 +1162,9 @@ document.getElementById('help-submit').addEventListener('click', async () => {
       })
       if (saveRes.ok) {
         currentHtml = adjusted_html
-        document.getElementById('help-panel').hidden = true
         document.getElementById('help-result').hidden = true
-        showSaveStatus('Fix applied. Refresh the public page to see it.')
+        document.getElementById('help-input').value = ''
+        showSaveStatus('Layout updated. Refresh the public page to see it.')
       }
     }
 
@@ -1182,6 +1174,11 @@ document.getElementById('help-submit').addEventListener('click', async () => {
       document.getElementById('help-input').focus()
     }
   }
+}
+
+document.getElementById('help-submit').addEventListener('click', submitLayoutChange)
+document.getElementById('help-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); submitLayoutChange() }
 })
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
