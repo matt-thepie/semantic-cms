@@ -505,6 +505,16 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 .login-box h1 { font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center }
 .login-box .btn { width: 100%; justify-content: center; margin-top: 1rem }
 
+.google-btn {
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  font-weight: 500;
+  gap: .6rem;
+}
+.google-btn:hover { background: #f8f9fa; text-decoration: none }
+.login-or { text-align: center; color: var(--color-muted); font-size: .8rem; margin: 1rem 0 .25rem; position: relative }
+
 /* ─── Dialog ───────────────────────────────────────────────────────────────── */
 
 dialog {

@@ -11,6 +11,10 @@ import siteRouter from './router/site.js'
 const SessionStore = SqliteStore(session)
 const app = express()
 
+// Behind nginx: trust X-Forwarded-Proto so secure cookies work and req.protocol
+// is https (used to build the Google OAuth redirect URI).
+app.set('trust proxy', 1)
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
@@ -22,7 +26,9 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    // 'lax' (not 'strict') so the session cookie is sent on the top-level
+    // redirect back from Google — required for the OAuth state check.
+    sameSite: 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000,
   },
 }))

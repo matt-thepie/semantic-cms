@@ -3,10 +3,12 @@ import multer from 'multer'
 import sharp from 'sharp'
 import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcrypt'
+import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
+import config from '../config.js'
 import db from '../db.js'
-import { requireAdmin, checkAdminPassword, changeAdminPassword } from '../services/auth.js'
+import { requireAdmin, checkAdminPassword, changeAdminPassword, googleConfigured, isEmailAllowed, passwordConfigured } from '../services/auth.js'
 import { describeChange, nextPageId, nextAssetId } from '../services/versions.js'
 import { uploadAsset, deleteAsset } from '../services/storage.js'
 import { semanticPass, helpPass, cssAudit, designPass, suggestImageQueries } from '../services/llm.js'
@@ -118,7 +120,77 @@ router.post('/auth/logout', (req, res) => {
 })
 
 router.get('/auth/status', (req, res) => {
-  res.json({ authenticated: req.session?.admin === true })
+  res.json({ authenticated: req.session?.admin === true, email: req.session?.adminEmail || null })
+})
+
+// Which sign-in methods are available (for the login page to show the right options)
+router.get('/auth/methods', (req, res) => {
+  res.json({ google: googleConfigured(), password: passwordConfigured() })
+})
+
+// ─── Google sign-in (OAuth) ────────────────────────────────────────────────────
+
+function googleRedirectUri(req) {
+  // Behind nginx, trust proxy makes req.protocol reflect the real https scheme
+  return `${req.protocol}://${req.get('host')}/api/auth/google/callback`
+}
+
+router.get('/auth/google', (req, res) => {
+  if (!googleConfigured()) return res.status(404).send('Google sign-in is not configured')
+  const state = crypto.randomBytes(16).toString('hex')
+  req.session.oauthState = state
+  const params = new URLSearchParams({
+    client_id: config.google.clientId,
+    redirect_uri: googleRedirectUri(req),
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+    access_type: 'online',
+  })
+  res.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + params.toString())
+})
+
+router.get('/auth/google/callback', async (req, res) => {
+  if (!googleConfigured()) return res.redirect('/admin/login')
+  const { code, state } = req.query
+  if (!code || !state || state !== req.session.oauthState) {
+    return res.redirect('/admin/login?error=auth')
+  }
+  delete req.session.oauthState
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: config.google.clientId,
+        client_secret: config.google.clientSecret,
+        redirect_uri: googleRedirectUri(req),
+        grant_type: 'authorization_code',
+      }),
+    })
+    if (!tokenRes.ok) throw new Error(`token exchange ${tokenRes.status}`)
+    const tokens = await tokenRes.json()
+
+    const infoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+    const info = await infoRes.json()
+    const email = (info.email || '').toLowerCase()
+
+    if (!info.verified_email || !isEmailAllowed(email)) {
+      return res.redirect('/admin/login?error=denied')
+    }
+
+    req.session.admin = true
+    req.session.adminEmail = email
+    res.redirect('/admin/')
+  } catch (err) {
+    console.error('Google sign-in failed:', err.message)
+    res.redirect('/admin/login?error=auth')
+  }
 })
 
 // ─── Pages ───────────────────────────────────────────────────────────────────

@@ -13,6 +13,15 @@ const config = {
     accessKey: process.env.UNSPLASH_ACCESS_KEY,
   },
 
+  google: {
+    clientId:     process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  },
+  // Comma-separated allowlist of admin Google accounts, e.g.
+  // ADMIN_EMAILS=alice@gmail.com,matt@gmail.com
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean),
+
   storage: {
     adapter:     process.env.STORAGE_ADAPTER || 'local',
     bucket:      process.env.STORAGE_BUCKET,
