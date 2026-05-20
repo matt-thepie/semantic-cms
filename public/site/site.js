@@ -44,15 +44,29 @@ function setupNavToggle() {
   })
 }
 
+function href(p) { return '/' + (p.slug === 'home' ? '' : p.slug) }
+function isActive(p) { return slug === p.slug || (slug === 'home' && p.slug === 'home') }
+
 async function loadNav() {
   try {
     const res = await fetch('/api/nav')
     if (!res.ok) return
     const pages = await res.json()
     const nav = document.getElementById('site-nav')
-    nav.innerHTML = pages.map(p =>
-      `<a href="/${p.slug === 'home' ? '' : p.slug}" class="${slug === p.slug || (slug === 'home' && p.slug === 'home') ? 'active' : ''}">${p.title}</a>`
-    ).join('')
+
+    // Build a two-level tree: top-level pages, each with their children
+    const tops = pages.filter(p => !p.parent_id)
+    const childrenOf = id => pages.filter(p => p.parent_id === id)
+
+    nav.innerHTML = tops.map(top => {
+      const kids = childrenOf(top.id)
+      const topLink = `<a href="${href(top)}" class="${isActive(top) ? 'active' : ''}">${top.title}</a>`
+      if (!kids.length) return `<div class="nav-item">${topLink}</div>`
+      const submenu = kids.map(k =>
+        `<a href="${href(k)}" class="nav-child ${isActive(k) ? 'active' : ''}">${k.title}</a>`
+      ).join('')
+      return `<div class="nav-item has-children">${topLink}<div class="nav-submenu">${submenu}</div></div>`
+    }).join('')
   } catch {}
 }
 
@@ -146,6 +160,8 @@ async function loadSiteMeta() {
     const res = await fetch('/api/site-meta')
     if (!res.ok) return
     const meta = await res.json()
+    // Apply the chosen nav layout to the document
+    document.body.dataset.nav = meta.nav_layout || 'topbar-dropdown'
     const name = meta.site_name || ''
     const logoEl = document.getElementById('site-logo')
     if (logoEl && name) logoEl.textContent = name

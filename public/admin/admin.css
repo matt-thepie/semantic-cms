@@ -211,6 +211,21 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 .page-row:hover { box-shadow: var(--shadow) }
 .page-row.dragging { opacity: .5 }
 
+/* Nested (child) pages — indented with a connector */
+.page-row-child {
+  margin-left: 1.75rem;
+  border-left: 3px solid var(--color-accent);
+}
+.page-parent {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.page-parent select { font-size: .8rem; padding: .25rem .4rem; width: auto }
+
 .drag-handle { color: var(--color-muted); cursor: grab; user-select: none }
 .drag-handle:active { cursor: grabbing }
 

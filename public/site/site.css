@@ -20,6 +20,7 @@
   --gap:       1.5rem;
 
   --header-hero-min-h: 220px;
+  --header-bg-image: url('https://images.unsplash.com/photo-1684784176798-aae206e325e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTYzNzZ8MHwxfHNlYXJjaHwxfHxncmFuZCUyMHBpYW5vfGVufDF8fHx8MTc3OTI3ODI5OHww&ixlib=rb-4.1.0&q=80&w=1080');
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,7 +57,8 @@ a { color: var(--color-accent) }
 .site-header {
   background-color: var(--color-header-bg);
   background-image:
-    linear-gradient(var(--color-header-overlay), var(--color-header-overlay));
+    linear-gradient(var(--color-header-overlay), var(--color-header-overlay)),
+    var(--header-bg-image);
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
@@ -382,15 +384,3 @@ figcaption { font-size: .875rem; color: var(--color-muted); margin-top: .5rem; f
 }
 
 .form-field input,
-.form-field textarea,
-.form-field select {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  padding: .6rem .75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  transition: border-color .15s;
-  width: 100%;
-}

@@ -1,0 +1,85 @@
+/* nav.css — navigation LAYOUT modes, selected via body[data-nav].
+   This file owns nav STRUCTURE only; colours/fonts come from the theme's
+   CSS custom properties (set in site.css), so it adapts to any theme.
+   It is never rewritten by the AI design tool. */
+
+.site-nav .nav-item { position: relative; }
+.site-nav .nav-child { display: block; }
+/* Submenus hidden by default; each layout decides when/how to reveal them */
+.site-nav .nav-submenu { display: none; }
+
+/* ─── Mobile (all modes): vertical stack inside the hamburger panel ─────────── */
+@media (max-width: 639px) {
+  body[data-nav] .site-nav { flex-direction: column; }
+  body[data-nav] .site-nav .nav-item { width: 100%; }
+  /* children show indented beneath their parent... */
+  body[data-nav] .site-nav .nav-submenu { display: block; padding-left: 1rem; }
+  body[data-nav] .site-nav .nav-child { opacity: .85; font-size: .95em; }
+  /* ...except the flat layout, which never shows children in the nav */
+  body[data-nav="topbar-flat"] .site-nav .nav-submenu { display: none; }
+}
+
+/* ─── Tablet and up ─────────────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+
+  /* TOP BAR layouts — horizontal */
+  body[data-nav="topbar-dropdown"] .site-nav,
+  body[data-nav="topbar-flat"] .site-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Dropdown: reveal the submenu on hover / keyboard focus */
+  body[data-nav="topbar-dropdown"] .has-children:hover > .nav-submenu,
+  body[data-nav="topbar-dropdown"] .has-children:focus-within > .nav-submenu {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 190px;
+    padding: .35rem 0;
+    border-radius: 6px;
+    background: var(--color-header-bg, var(--color-surface));
+    box-shadow: 0 6px 20px rgba(0,0,0,.28);
+    z-index: 50;
+  }
+  body[data-nav="topbar-dropdown"] .nav-submenu .nav-child {
+    padding: .55rem 1.1rem;
+    white-space: nowrap;
+    text-align: left;
+    color: var(--color-header-text, var(--color-text));
+  }
+  body[data-nav="topbar-dropdown"] .nav-submenu .nav-child:hover {
+    background: rgba(255,255,255,0.10);
+  }
+  /* a small affordance that an item has children */
+  body[data-nav="topbar-dropdown"] .has-children > a::after { content: " ▾"; opacity: .6; }
+
+  /* Flat: never show children in the nav */
+  body[data-nav="topbar-flat"] .site-nav .nav-submenu { display: none !important; }
+
+  /* SIDEBAR layout — header becomes a fixed left column */
+  body[data-nav="sidebar"] .site-header {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 240px;
+    min-height: 100dvh;
+    overflow-y: auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    z-index: 40;
+  }
+  body[data-nav="sidebar"] .site-content,
+  body[data-nav="sidebar"] .site-footer { margin-left: 240px; }
+  body[data-nav="sidebar"] .site-nav {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  body[data-nav="sidebar"] .site-nav .nav-item { width: 100%; }
+  body[data-nav="sidebar"] .site-nav .nav-submenu { display: block; padding-left: 1rem; }
+  body[data-nav="sidebar"] .site-nav .nav-child { padding: .4rem 0; font-size: .9em; opacity: .85; }
+}

@@ -125,16 +125,16 @@ router.get('/auth/status', (req, res) => {
 
 router.get('/pages', requireAdmin, (req, res) => {
   const pages = db.prepare(`
-    SELECT id, slug, title, nav_order, purpose, password_hash IS NOT NULL AS protected, updated_at
+    SELECT id, slug, title, nav_order, parent_id, purpose, password_hash IS NOT NULL AS protected, updated_at
     FROM pages WHERE deleted_at IS NULL ORDER BY nav_order ASC, created_at ASC
   `).all()
   res.json(pages.map(p => ({ ...p, protected: !!p.protected })))
 })
 
-// Public navigation list (no sensitive fields)
+// Public navigation list (no sensitive fields) — includes hierarchy
 router.get('/nav', (req, res) => {
   const pages = db.prepare(`
-    SELECT slug, title FROM pages WHERE deleted_at IS NULL
+    SELECT slug, title, parent_id, id FROM pages WHERE deleted_at IS NULL
     ORDER BY nav_order ASC, created_at ASC
   `).all()
   res.json(pages)
@@ -142,7 +142,7 @@ router.get('/nav', (req, res) => {
 
 // Public site metadata (only safe, public fields)
 router.get('/site-meta', (req, res) => {
-  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits')").all()
+  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits','nav_layout')").all()
   const s = Object.fromEntries(rows.map(r => [r.key, r.value]))
   let imageCredits = []
   try { imageCredits = JSON.parse(s.image_credits || '[]') } catch {}
@@ -150,6 +150,7 @@ router.get('/site-meta', (req, res) => {
     site_name: s.site_name || '',
     site_description: s.site_description || '',
     image_credits: imageCredits,
+    nav_layout: s.nav_layout || 'topbar-dropdown',
   })
 })
 
@@ -167,7 +168,7 @@ router.get('/pages/:slug', (req, res) => {
 })
 
 router.post('/pages', requireAdmin, async (req, res) => {
-  const { title, slug, password } = req.body
+  const { title, slug, password, parent_id } = req.body
   if (!title) return res.status(400).json({ error: 'Title required' })
 
   const id = nextPageId(db)
@@ -176,17 +177,20 @@ router.post('/pages', requireAdmin, async (req, res) => {
   const ts = now()
 
   const passwordHash = password ? await bcrypt.hash(password, 12) : null
+  // Only allow a top-level page as a parent (enforce two-level cap)
+  const parent = parent_id ? db.prepare('SELECT id, parent_id FROM pages WHERE id = ? AND deleted_at IS NULL').get(parent_id) : null
+  const finalParent = parent && !parent.parent_id ? parent.id : null
 
   db.prepare(`
-    INSERT INTO pages (id, slug, title, nav_order, password_hash, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, finalSlug, title, navOrder, passwordHash, ts, ts)
+    INSERT INTO pages (id, slug, title, nav_order, parent_id, password_hash, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, finalSlug, title, navOrder, finalParent, passwordHash, ts, ts)
 
   res.status(201).json({ id, slug: finalSlug })
 })
 
 router.put('/pages/:id', requireAdmin, (req, res) => {
-  const { title, nav_order, purpose } = req.body
+  const { title, nav_order, purpose, parent_id } = req.body
   const page = db.prepare('SELECT id FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
@@ -195,6 +199,17 @@ router.put('/pages/:id', requireAdmin, (req, res) => {
   if (title !== undefined)     { updates.push('title = ?');     values.push(title) }
   if (nav_order !== undefined) { updates.push('nav_order = ?'); values.push(nav_order) }
   if (purpose !== undefined)   { updates.push('purpose = ?');   values.push(purpose || null) }
+  if (parent_id !== undefined) {
+    // Enforce two-level cap: parent must exist, be top-level, not self, and
+    // the page being moved must not itself have children.
+    let finalParent = null
+    if (parent_id) {
+      const parent = db.prepare('SELECT id, parent_id FROM pages WHERE id = ? AND deleted_at IS NULL').get(parent_id)
+      const hasChildren = db.prepare('SELECT 1 FROM pages WHERE parent_id = ? AND deleted_at IS NULL LIMIT 1').get(req.params.id)
+      if (parent && !parent.parent_id && parent.id !== req.params.id && !hasChildren) finalParent = parent.id
+    }
+    updates.push('parent_id = ?'); values.push(finalParent)
+  }
   if (!updates.length) return res.status(400).json({ error: 'Nothing to update' })
 
   updates.push('updated_at = ?')
@@ -680,7 +695,7 @@ router.get('/settings', requireAdmin, (req, res) => {
 })
 
 router.put('/settings', requireAdmin, async (req, res) => {
-  const allowed = ['site_name', 'site_description', 'site_ia', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
+  const allowed = ['site_name', 'site_description', 'site_ia', 'nav_layout', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
   const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
 
   for (const [key, value] of Object.entries(req.body)) {

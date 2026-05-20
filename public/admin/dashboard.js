@@ -58,19 +58,46 @@ async function loadPages() {
 function renderPageList(pages) {
   const list = document.getElementById('page-list')
   list.innerHTML = ''
-  for (const page of pages) {
+
+  const tops = pages.filter(p => !p.parent_id)
+  const childrenOf = id => pages.filter(p => p.parent_id === id)
+  const hasChildren = id => pages.some(p => p.parent_id === id)
+
+  const parentOptions = (page) => {
+    let opts = '<option value="">— Top level —</option>'
+    for (const t of tops) {
+      if (t.id === page.id) continue
+      opts += `<option value="${t.id}"${page.parent_id === t.id ? ' selected' : ''}>${t.title}</option>`
+    }
+    return opts
+  }
+
+  const renderRow = (page, isChild) => {
     const li = document.createElement('li')
-    li.className = 'page-row'
+    li.className = 'page-row' + (isChild ? ' page-row-child' : '')
     li.draggable = true
     li.dataset.id = page.id
+    // A page that already has sub-pages can't itself be nested (two-level cap)
+    const canNest = !hasChildren(page.id)
     li.innerHTML = `
       <span class="drag-handle" title="Drag to reorder">⠿</span>
       <span class="page-title">${page.title}${page.protected ? ' 🔒' : ''}</span>
       <span class="page-slug">/${page.slug}</span>
-      <span class="page-updated">${timeAgo(page.updated_at)}</span>
+      <label class="page-parent">Under
+        <select class="parent-select"${canNest ? '' : ' disabled'}>${parentOptions(page)}</select>
+      </label>
       <a href="/admin/editor.html?id=${page.id}" class="btn btn-ghost btn-sm">Edit</a>
     `
+    li.querySelector('.parent-select').addEventListener('change', async e => {
+      await api('PUT', '/pages/' + page.id, { parent_id: e.target.value || null })
+      loadPages()
+    })
     list.appendChild(li)
+  }
+
+  for (const top of tops) {
+    renderRow(top, false)
+    for (const child of childrenOf(top.id)) renderRow(child, true)
   }
   initDragReorder(list)
 }
@@ -299,7 +326,8 @@ document.getElementById('design-btn').addEventListener('click', async () => {
     frame.onload = () => {
       try {
         const doc = frame.contentDocument
-        doc.querySelectorAll('link[rel="stylesheet"]').forEach(l => l.remove())
+        // Only replace the theme stylesheet; keep nav.css (layout) intact
+        doc.querySelectorAll('link[href*="site.css"]').forEach(l => l.remove())
         const style = doc.createElement('style')
         style.textContent = candidateCss
         doc.head.appendChild(style)
