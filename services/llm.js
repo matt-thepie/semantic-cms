@@ -16,6 +16,18 @@ function loadPrompt(name) {
     : fs.readFileSync(defaultPath, 'utf8')
 }
 
+// Strip markdown code fences the model sometimes wraps output in,
+// despite being told not to. Handles ```html ... ``` and bare ``` ... ```.
+function stripFences(text) {
+  if (!text) return text
+  let out = text.trim()
+  const fence = out.match(/^```(?:html|css)?\s*\n([\s\S]*?)\n```$/)
+  if (fence) return fence[1].trim()
+  // Also handle a stray leading/trailing fence without the pair matching exactly
+  out = out.replace(/^```(?:html|css)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+  return out.trim()
+}
+
 function spansToText(spans) {
   if (!spans) return ''
   return spans.map(s => s.text).join('')
@@ -92,7 +104,7 @@ ${previousHtml || '(none — first save)'}
 BLOCK_JSON:
 ${JSON.stringify(blockJson, null, 2)}`
 
-  return adapter.complete(prompt, context)
+  return stripFences(await adapter.complete(prompt, context))
 }
 
 export async function helpPass({ complaint, blockJson, currentHtml, pageTitle, pageSlug, pagePurpose, siteSettings, sitePages }) {
@@ -115,7 +127,7 @@ ${currentHtml}
 BLOCK_JSON:
 ${JSON.stringify(blockJson, null, 2)}`
 
-  return adapter.complete(prompt, context)
+  return stripFences(await adapter.complete(prompt, context))
 }
 
 export async function designPass({ brief, currentCss, allPageHtml }) {
@@ -140,7 +152,7 @@ ${currentCss}
 PAGE HTML (for context — do not change this):
 ${allPageHtml.map((h, i) => `--- Page ${i + 1} ---\n${h}`).join('\n\n')}`
 
-  return adapter.complete(prompt, context)
+  return stripFences(await adapter.complete(prompt, context))
 }
 
 export async function cssAudit({ currentCss, allPageHtml, colorProperties }) {
@@ -159,5 +171,5 @@ ${currentCss}
 ALL_PAGE_HTML:
 ${htmlFragments}`
 
-  return adapter.complete(prompt, context)
+  return stripFences(await adapter.complete(prompt, context))
 }
