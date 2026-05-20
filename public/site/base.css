@@ -237,3 +237,24 @@ body.has-admin-bar { padding-bottom: 4.5rem; }
   .admin-bar-label { display: none; }
   .admin-bar { gap: .4rem; padding: .5rem .55rem; }
 }
+
+/* ─── Site width (Appearance → "Site width"; never AI-managed) ──────────────────
+   "Boxed" layout: the full-bleed header and footer bands are capped to a centred
+   column on wide screens, with the page background showing in the margins. We cap
+   the structural bands (.site-header / .site-footer), not .site-content — the
+   theme already sets the text column's reading width and we must not widen it.
+   Higher specificity than the theme's plain .site-* rules, so site.css can't
+   override it; we also cap the inner bar so its contents line up with the band. */
+
+body[data-site-width]            { --site-max-width: 1100px; }   /* standard */
+body[data-site-width="full"]     { --site-max-width: none; }
+body[data-site-width="narrow"]   { --site-max-width: 900px; }
+body[data-site-width="standard"] { --site-max-width: 1100px; }
+body[data-site-width="wide"]     { --site-max-width: 1320px; }
+
+body[data-site-width]:not([data-site-width="full"]) .site-header,
+body[data-site-width]:not([data-site-width="full"]) .site-footer {
+  max-width: var(--site-max-width);
+  margin-left: auto;
+  margin-right: auto;
+}

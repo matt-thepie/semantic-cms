@@ -254,6 +254,10 @@ async function loadSettings() {
   const navLayout = settings.nav_layout || 'topbar-dropdown'
   const radio = document.querySelector(`input[name="nav_layout"][value="${navLayout}"]`)
   if (radio) radio.checked = true
+  // site_max_width is also a set of radio cards
+  const siteWidth = settings.site_max_width || 'standard'
+  const widthRadio = document.querySelector(`input[name="site_max_width"][value="${siteWidth}"]`)
+  if (widthRadio) widthRadio.checked = true
   const siteName = settings.site_name || 'Semantic CMS'
   document.getElementById('site-name').textContent = siteName
 }
@@ -266,6 +270,19 @@ document.querySelectorAll('input[name="nav_layout"]').forEach(radio => {
     const res = await api('PUT', '/settings', { nav_layout: radio.value })
     if (msg) {
       msg.textContent = res.ok ? 'Menu layout saved — refresh your site to see it.' : 'Could not save. Try again.'
+      msg.hidden = false
+      setTimeout(() => { msg.hidden = true }, 5000)
+    }
+  })
+})
+
+// Site width — also saves the moment a card is chosen.
+document.querySelectorAll('input[name="site_max_width"]').forEach(radio => {
+  radio.addEventListener('change', async () => {
+    const msg = document.getElementById('site-width-msg')
+    const res = await api('PUT', '/settings', { site_max_width: radio.value })
+    if (msg) {
+      msg.textContent = res.ok ? 'Site width saved — refresh your site to see it.' : 'Could not save. Try again.'
       msg.hidden = false
       setTimeout(() => { msg.hidden = true }, 5000)
     }

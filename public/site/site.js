@@ -165,6 +165,8 @@ async function loadSiteMeta() {
     const meta = await res.json()
     // Apply the chosen nav layout to the document
     document.body.dataset.nav = meta.nav_layout || 'topbar-dropdown'
+    // Apply the chosen site width (boxed max-width) — a control, not AI-managed
+    document.body.dataset.siteWidth = meta.site_max_width || 'standard'
     const name = meta.site_name || ''
     const logoEl = document.getElementById('site-logo')
     if (logoEl && name) logoEl.textContent = name

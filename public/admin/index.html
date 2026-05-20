@@ -115,6 +115,69 @@
         <p id="nav-layout-msg" class="status-message" hidden></p>
       </div>
 
+      <div class="appearance-section">
+        <h2 class="section-h">Site width</h2>
+        <p class="muted">How wide your site is on big screens. A narrower width stops your pages stretching edge-to-edge on large monitors. This saves as soon as you choose.</p>
+        <div class="layout-picker">
+          <label class="layout-option">
+            <input type="radio" name="site_max_width" value="full">
+            <span class="layout-card">
+              <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                <rect class="nav-bar" x="1.5" y="1.5" width="61" height="9" rx="3"/>
+                <rect class="nav-line" x="6" y="18" width="52" height="2.5" rx="1"/>
+                <rect class="nav-line" x="6" y="24" width="52" height="2.5" rx="1"/>
+              </svg>
+              <span class="layout-name">Full width</span>
+              <span class="layout-desc">Fills the whole screen</span>
+            </span>
+          </label>
+
+          <label class="layout-option">
+            <input type="radio" name="site_max_width" value="wide">
+            <span class="layout-card">
+              <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                <rect class="nav-bar" x="6" y="1.5" width="52" height="9" rx="3"/>
+                <rect class="nav-line" x="10" y="18" width="44" height="2.5" rx="1"/>
+                <rect class="nav-line" x="10" y="24" width="44" height="2.5" rx="1"/>
+              </svg>
+              <span class="layout-name">Wide</span>
+              <span class="layout-desc">Roomy, with small margins</span>
+            </span>
+          </label>
+
+          <label class="layout-option">
+            <input type="radio" name="site_max_width" value="standard" checked>
+            <span class="layout-card">
+              <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                <rect class="nav-bar" x="12" y="1.5" width="40" height="9" rx="3"/>
+                <rect class="nav-line" x="16" y="18" width="32" height="2.5" rx="1"/>
+                <rect class="nav-line" x="16" y="24" width="32" height="2.5" rx="1"/>
+              </svg>
+              <span class="layout-name">Standard</span>
+              <span class="layout-desc">Comfortable, centred column</span>
+            </span>
+          </label>
+
+          <label class="layout-option">
+            <input type="radio" name="site_max_width" value="narrow">
+            <span class="layout-card">
+              <svg viewBox="0 0 64 44" class="layout-wire" aria-hidden="true">
+                <rect class="nav-page" x="1.5" y="1.5" width="61" height="41" rx="3"/>
+                <rect class="nav-bar" x="18" y="1.5" width="28" height="9" rx="3"/>
+                <rect class="nav-line" x="22" y="18" width="20" height="2.5" rx="1"/>
+                <rect class="nav-line" x="22" y="24" width="20" height="2.5" rx="1"/>
+              </svg>
+              <span class="layout-name">Narrow</span>
+              <span class="layout-desc">Tight, focused single column</span>
+            </span>
+          </label>
+        </div>
+        <p id="site-width-msg" class="status-message" hidden></p>
+      </div>
+
       <div class="appearance-section appearance-advanced">
         <h2 class="section-h">Tidy up the code</h2>
         <p class="muted">Cleans up the behind-the-scenes code without changing how anything looks. You'll rarely need this.</p>

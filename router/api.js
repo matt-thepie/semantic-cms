@@ -214,7 +214,7 @@ router.get('/nav', (req, res) => {
 
 // Public site metadata (only safe, public fields)
 router.get('/site-meta', (req, res) => {
-  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits','nav_layout','header_image')").all()
+  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('site_name','site_description','image_credits','nav_layout','header_image','site_max_width')").all()
   const s = Object.fromEntries(rows.map(r => [r.key, r.value]))
   let imageCredits = []
   try { imageCredits = JSON.parse(s.image_credits || '[]') } catch {}
@@ -226,6 +226,7 @@ router.get('/site-meta', (req, res) => {
     image_credits: imageCredits,
     nav_layout: s.nav_layout || 'topbar-dropdown',
     header_image: headerImage,
+    site_max_width: s.site_max_width || 'standard',
   })
 })
 
@@ -815,7 +816,7 @@ router.get('/settings', requireAdmin, (req, res) => {
 })
 
 router.put('/settings', requireAdmin, async (req, res) => {
-  const allowed = ['site_name', 'site_description', 'site_ia', 'nav_layout', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
+  const allowed = ['site_name', 'site_description', 'site_ia', 'nav_layout', 'site_max_width', 'contact_email', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_from', 'smtp_to']
   const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
 
   for (const [key, value] of Object.entries(req.body)) {
