@@ -9,7 +9,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --env-file=.env server.js"
+    "dev": "node --watch --env-file=.env server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3",
