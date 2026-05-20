@@ -303,6 +303,31 @@ hr { border: none; border-top: 1px solid var(--color-border) }
 }
 .form-field label { font-size: .875rem; font-weight: 500 }
 
+/* ─── Appearance tab ───────────────────────────────────────────────────────── */
+
+.appearance-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.appearance-section:last-child { border-bottom: none }
+.section-h { font-size: 1.05rem; margin-bottom: .4rem }
+.section-lead { color: var(--color-muted); margin-bottom: 1rem; max-width: 60ch }
+
+/* The headline feature of this tab — give it room and prominence */
+.appearance-feature {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: .5rem;
+}
+.appearance-feature .section-h { font-size: 1.2rem }
+.appearance-feature textarea { width: 100%; resize: vertical; margin-bottom: 1rem }
+
+.btn-lg { padding: .7rem 1.5rem; font-size: 1rem }
+
+.appearance-advanced { opacity: .85 }
+
 /* ─── Navigation layout picker (visual cards) ──────────────────────────────── */
 
 .layout-picker {

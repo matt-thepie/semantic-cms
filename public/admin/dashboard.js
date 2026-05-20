@@ -26,19 +26,34 @@ function slugify(str) {
 
 // ─── Tab navigation ───────────────────────────────────────────────────────────
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const target = btn.dataset.tab
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
-    document.querySelectorAll('.tab-panel').forEach(p => { p.classList.remove('active'); p.hidden = true })
-    btn.classList.add('active')
-    const panel = document.getElementById('tab-' + target)
-    panel.classList.add('active')
-    panel.hidden = false
-    if (target === 'assets') loadAssets()
-    if (target === 'settings') loadSettings()
+// Each tab is deep-linkable via the URL hash (e.g. /admin/#appearance), so a
+// direct link to any pane can be shared.
+const VALID_TABS = ['pages', 'appearance', 'assets', 'settings']
+
+function showTab(target, { updateHash = true } = {}) {
+  if (!VALID_TABS.includes(target)) target = 'pages'
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === target))
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    const on = p.id === 'tab-' + target
+    p.classList.toggle('active', on)
+    p.hidden = !on
   })
+  if (updateHash) location.hash = target
+  if (target === 'assets') loadAssets()
+  if (target === 'settings') loadSettings()
+  if (target === 'appearance') loadSettings() // keeps the nav-layout selection in sync
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab))
 })
+
+// Respond to back/forward and direct hash links
+window.addEventListener('hashchange', () => showTab(location.hash.replace('#', ''), { updateHash: false }))
+
+// On load, honour the hash if present
+const initialTab = location.hash.replace('#', '')
+if (initialTab) showTab(initialTab, { updateHash: false })
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
@@ -242,6 +257,20 @@ async function loadSettings() {
   const siteName = settings.site_name || 'Semantic CMS'
   document.getElementById('site-name').textContent = siteName
 }
+
+// Menu layout lives in the Appearance tab (outside the settings form), so it
+// saves the moment a card is chosen.
+document.querySelectorAll('input[name="nav_layout"]').forEach(radio => {
+  radio.addEventListener('change', async () => {
+    const msg = document.getElementById('nav-layout-msg')
+    const res = await api('PUT', '/settings', { nav_layout: radio.value })
+    if (msg) {
+      msg.textContent = res.ok ? 'Menu layout saved — refresh your site to see it.' : 'Could not save. Try again.'
+      msg.hidden = false
+      setTimeout(() => { msg.hidden = true }, 5000)
+    }
+  })
+})
 
 document.getElementById('settings-form').addEventListener('submit', async e => {
   e.preventDefault()
