@@ -59,6 +59,7 @@ const migrations = [
   'ALTER TABLE assets ADD COLUMN credit TEXT',
   'ALTER TABLE assets ADD COLUMN credit_url TEXT',
   'ALTER TABLE pages ADD COLUMN parent_id TEXT',
+  'ALTER TABLE pages ADD COLUMN layout_notes TEXT', // JSON array of remembered layout instructions
 ]
 for (const m of migrations) {
   try { db.exec(m) } catch (e) {

@@ -86,10 +86,16 @@ function buildSiteContext({ siteSettings, sitePages, pageSlug }) {
 SITE_DESCRIPTION: ${siteSettings.site_description || ''}${ia}${pagesBlock}`
 }
 
-export async function semanticPass({ blockJson, pageTitle, pageSlug, pagePurpose, previousHtml, assetMap, siteSettings, sitePages }) {
+export async function semanticPass({ blockJson, pageTitle, pageSlug, pagePurpose, previousHtml, assetMap, siteSettings, sitePages, layoutNotes }) {
   const prompt = loadPrompt('semantic')
   const siteContext = buildSiteContext({ siteSettings, sitePages, pageSlug })
   const purposeLine = pagePurpose ? `\nTHIS_PAGE_PURPOSE: ${pagePurpose}` : ''
+
+  const notes = Array.isArray(layoutNotes) ? layoutNotes.filter(Boolean) : []
+  const layoutSection = notes.length
+    ? `\nLAYOUT_PREFERENCES (the editor previously asked for these layout changes — you MUST honour them in your output, applying them to the current content):
+${notes.map(n => `- ${n}`).join('\n')}\n`
+    : ''
 
   const context = `${siteContext}
 PAGE_TITLE: ${pageTitle}
@@ -97,7 +103,7 @@ PAGE_SLUG: ${pageSlug}${purposeLine}
 BREAKPOINTS: ${BREAKPOINTS}
 CLASS_VOCABULARY:
 ${CLASS_VOCABULARY}
-
+${layoutSection}
 ASSET_MAP:
 ${buildAssetMapText(assetMap)}
 

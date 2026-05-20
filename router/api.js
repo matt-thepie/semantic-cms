@@ -337,7 +337,7 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
   const { block_json } = req.body
   if (!Array.isArray(block_json)) return res.status(400).json({ error: 'block_json must be an array' })
 
-  const page = db.prepare('SELECT id, slug, title, purpose FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, slug, title, purpose, layout_notes FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
 
   const previousVersion = db.prepare('SELECT id, block_json, rendered_html FROM page_versions WHERE page_id = ? ORDER BY id DESC LIMIT 1').get(page.id)
@@ -368,6 +368,7 @@ router.post('/pages/:id/save', requireAdmin, async (req, res) => {
       assetMap,
       siteSettings,
       sitePages,
+      layoutNotes: page.layout_notes ? JSON.parse(page.layout_notes) : [],
     })
   } catch (err) {
     console.error('LLM semantic pass failed:', err.message)
@@ -419,12 +420,21 @@ router.post('/pages/:id/help', requireAdmin, async (req, res) => {
 // Store HTML directly (used by "Apply this fix" — keeps the help-adjusted HTML
 // instead of re-running the semantic pass, which would discard the adjustment).
 router.post('/pages/:id/apply-html', requireAdmin, (req, res) => {
-  const { block_json, rendered_html } = req.body
+  const { block_json, rendered_html, layout_note } = req.body
   if (!Array.isArray(block_json) || typeof rendered_html !== 'string') {
     return res.status(400).json({ error: 'block_json and rendered_html required' })
   }
-  const page = db.prepare('SELECT id FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
+  const page = db.prepare('SELECT id, layout_notes FROM pages WHERE id = ? AND deleted_at IS NULL').get(req.params.id)
   if (!page) return res.status(404).json({ error: 'Not found' })
+
+  // Remember this layout instruction so future renders (semantic pass) keep it,
+  // not just this one stored HTML. Keep the most recent few, de-duplicated.
+  if (typeof layout_note === 'string' && layout_note.trim()) {
+    const notes = page.layout_notes ? JSON.parse(page.layout_notes) : []
+    notes.push(layout_note.trim())
+    const trimmed = [...new Set(notes)].slice(-8)
+    db.prepare('UPDATE pages SET layout_notes = ? WHERE id = ?').run(JSON.stringify(trimmed), page.id)
+  }
 
   const ts = now()
   const versionId = db.prepare(`

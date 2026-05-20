@@ -9,8 +9,11 @@ You will receive:
 - The block JSON for this page
 - A resolved asset map (asset IDs → URLs and filenames)
 - The HTML output from the previous save (may be empty on first save)
+- (Optional) LAYOUT_PREFERENCES: layout changes the editor previously requested and approved
 - A predefined CSS class vocabulary you must use
 - Three named breakpoints: mobile (<640px), tablet (640px–1024px), desktop (>1024px)
+
+LAYOUT_PREFERENCES are persistent instructions, not one-off requests. If present, you MUST apply every one of them to the current content — e.g. if a preference says "put the homepage into two columns", lay the content out in two columns even though the BLOCK_JSON is a flat list. Re-create these layouts on every render; never revert to a default layout that ignores them. Honour them using the CLASS_VOCABULARY and the PREVIOUS_HTML as a guide to the established structure.
 
 Use SITE_INFORMATION_ARCHITECTURE and SITE_PAGES to make better mobile decisions. If the IA says this page is a primary call-to-action, lead with the most important content. If the page is secondary or reference material, you can be more conservative about hiding/reordering content on mobile. The site IA and page purpose should inform what gets prominence at smaller screens.
 

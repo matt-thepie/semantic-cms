@@ -1339,6 +1339,7 @@ async function submitLayoutChange() {
       const saveRes = await api('POST', `/pages/${pageId}/apply-html`, {
         block_json: blocks,
         rendered_html: adjusted_html,
+        layout_note: complaint,
       })
       if (saveRes.ok) {
         // Persist any title/purpose edits too, so the whole page is saved.
