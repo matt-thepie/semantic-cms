@@ -14,50 +14,19 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      # Only reinstall dependencies when they actually change — native modules
-      # (better-sqlite3, sharp) are slow to rebuild.
-      - uses: dorny/paths-filter@v4
-        id: changes
-        with:
-          filters: |
-            deps:
-              - 'package.json'
-              - 'package-lock.json'
-
+      # The deploy key is locked on the VPS (authorized_keys command=) to running
+      # ~/github/semantic-cms/deploy.sh, so no remote command is given here. To change
+      # what a deploy does, edit deploy.sh.
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1
         env:
-          DEPLOY_DEPS: ${{ steps.changes.outputs.deps }}
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          envs: DEPLOY_DEPS
-          script: |
-            set -e
-            source ~/.nvm/nvm.sh
-            cd ~/github/semantic-cms
-
-            # Preserve the live, AI-generated theme (untracked) across the reset.
-            [ -f public/site/site.css ] && cp public/site/site.css /tmp/scms-site.css.bak || true
-
-            git fetch origin main
-            git reset --hard origin/main
-
-            # Restore the live theme if the reset removed it (first transition only).
-            if [ ! -f public/site/site.css ] && [ -f /tmp/scms-site.css.bak ]; then
-              cp /tmp/scms-site.css.bak public/site/site.css
-            fi
-
-            # Reinstall deps only when package files changed (or on manual run).
-            if [ "$DEPLOY_DEPS" != "false" ]; then
-              npm ci
-            fi
-
-            pm2 restart semantic-cms --update-env
-            pm2 save
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
